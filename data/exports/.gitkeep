@@ -1,0 +1,2 @@
+# This file ensures the exports directory is tracked by git but remains empty of data files
+# Data export files will be generated here during runtime but should not be committed

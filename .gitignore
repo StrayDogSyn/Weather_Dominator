@@ -192,3 +192,35 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+# Project-specific cleanup patterns
+# Demo and test files
+demo_*.py
+test_*.py
+*_demo.py
+*_test.py
+
+# Backup files
+*.bak
+*.backup
+*~
+*.tmp
+*.temp
+
+# Data exports and temporary files
+data/exports/*
+!data/exports/.gitkeep
+
+# Database files that might be generated during testing
+*.db-journal
+*.sqlite-journal
+
+# IDE and editor temporary files
+.vscode/settings.json
+*.swp
+*.swo
+
+# OS specific files
+.DS_Store
+Thumbs.db
+desktop.ini
