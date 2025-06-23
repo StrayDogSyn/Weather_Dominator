@@ -4,6 +4,19 @@ Implements Temperature Graph, Weather Icons, and Theme Switcher
 as specified in the project requirements.
 """
 
+# Type imports for when matplotlib is available
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    try:
+        import matplotlib.pyplot as plt
+        import matplotlib.dates as mdates
+        from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+        from matplotlib.figure import Figure
+        from matplotlib.axes import Axes
+    except ImportError:
+        pass
+
+# Runtime imports with fallback
 try:
     import matplotlib.pyplot as plt
     import matplotlib.dates as mdates
@@ -91,14 +104,13 @@ class VisualFeatures:
                 "cloudy": {"bg": "#D3D3D3", "text": "#2F4F4F", "accent": "#708090"},
                 "rainy": {"bg": "#B0C4DE", "text": "#191970", "accent": "#4169E1"},
                 "snowy": {"bg": "#F0F8FF", "text": "#483D8B", "accent": "#6495ED"}
-            }
-        }
-    
+            }        }    
     # =============================================================================
     # 1. TEMPERATURE GRAPH
     # =============================================================================
-      def create_temperature_graph(self, city: str, days: int = 7, 
-                               graph_type: str = "line") -> Any:
+    
+    def create_temperature_graph(self, city: str, days: int = 7, 
+                               graph_type: str = "line") -> Optional[Any]:
         """
         Create line graph of temperature history
         
@@ -134,12 +146,17 @@ class VisualFeatures:
                 descriptions.append(record.get('description', 'Unknown'))
         
         if not dates:
-            return self._create_no_data_graph(f"No valid temperature readings for {city}")
-        
+            return self._create_no_data_graph(f"No valid temperature readings for {city}")        
         # Create figure with current theme colors
         colors = self.color_schemes[self.current_theme]
+        
+        # Check if matplotlib is available at runtime
+        if plt is None:
+            return None
+            
         fig, ax = plt.subplots(figsize=(12, 6))
-        fig.patch.set_facecolor(colors["background"])
+        if hasattr(fig, 'patch'):
+            fig.patch.set_facecolor(colors["background"])  # type: ignore
         ax.set_facecolor(colors["background"])
         
         # Plot based on graph type
@@ -149,14 +166,13 @@ class VisualFeatures:
                    marker='o', markersize=6, label='Temperature')
             ax.plot(dates, feels_like, 
                    color=colors["secondary"], linewidth=1, 
-                   linestyle='--', alpha=0.7, label='Feels Like')
-        
+                   linestyle='--', alpha=0.7, label='Feels Like')        
         elif graph_type == "bar":
             ax.bar(dates, temperatures, 
                   color=colors["temp_line"], alpha=0.7, label='Temperature')
         
         elif graph_type == "area":
-            ax.fill_between(dates, temperatures, 
+            ax.fill_between(dates, temperatures,  # type: ignore
                            color=colors["temp_line"], alpha=0.3)
             ax.plot(dates, temperatures, 
                    color=colors["temp_line"], linewidth=2)
@@ -167,12 +183,14 @@ class VisualFeatures:
         ax.set_xlabel('Date', color=colors["text"], fontsize=12)
         ax.set_ylabel('Temperature (°F)', color=colors["text"], fontsize=12)
         
-        # Format x-axis
-        ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d'))
-        ax.xaxis.set_major_locator(mdates.DayLocator(interval=1))
-        plt.setp(ax.xaxis.get_majorticklabels(), rotation=45)
-        
-        # Style the graph
+        # Format x-axis - check if mdates is available
+        if mdates is not None:
+            ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d'))
+            ax.xaxis.set_major_locator(mdates.DayLocator(interval=1))
+            
+        if plt is not None:
+            plt.setp(ax.xaxis.get_majorticklabels(), rotation=45)
+          # Style the graph
         ax.grid(True, color=colors["grid"], alpha=0.3)
         ax.tick_params(colors=colors["text"])
         ax.spines['bottom'].set_color(colors["text"])
@@ -182,13 +200,13 @@ class VisualFeatures:
         
         if graph_type == "line":
             ax.legend(facecolor=colors["background"], 
-                     edgecolor=colors["text"], labelcolor=colors["text"])
-        
-        plt.tight_layout()
+                     edgecolor=colors["text"], labelcolor=colors["text"])        
+        if plt is not None:
+            plt.tight_layout()
         return fig
     
     def embed_graph_in_tkinter(self, parent_frame: tk.Widget, 
-                              city: str, days: int = 7) -> FigureCanvasTkAgg:
+                              city: str, days: int = 7) -> Optional[Any]:
         """
         Embed matplotlib graph in Tkinter widget
         
@@ -198,9 +216,15 @@ class VisualFeatures:
             days: Number of days to display
             
         Returns:
-            Canvas object with embedded graph
+            Canvas object with embedded graph or None if matplotlib not available
         """
+        if not MATPLOTLIB_AVAILABLE or FigureCanvasTkAgg is None:
+            print("Matplotlib not available for Tkinter embedding.")
+            return None
+            
         fig = self.create_temperature_graph(city, days)
+        if fig is None:
+            return None
         
         # Embed in Tkinter
         canvas = FigureCanvasTkAgg(fig, parent_frame)
@@ -209,7 +233,7 @@ class VisualFeatures:
         
         return canvas
     
-    def create_multi_metric_graph(self, city: str, days: int = 7) -> plt.Figure:
+    def create_multi_metric_graph(self, city: str, days: int = 7) -> Optional[Any]:
         """
         Create graph showing multiple weather metrics
         
@@ -223,8 +247,7 @@ class VisualFeatures:
         weather_data = self.weather_features.display_last_7_days(city)
         
         if not weather_data:
-            return self._create_no_data_graph(f"No data for {city}")
-        
+            return self._create_no_data_graph(f"No data for {city}")        
         # Extract data
         dates = []
         temperatures = []
@@ -241,9 +264,12 @@ class VisualFeatures:
         
         colors = self.color_schemes[self.current_theme]
         
-        # Create subplots
+        # Check if matplotlib is available at runtime
+        if plt is None:
+            return None        # Create subplots
         fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 10))
-        fig.patch.set_facecolor(colors["background"])
+        if hasattr(fig, 'patch'):
+            fig.patch.set_facecolor(colors["background"])  # type: ignore
         
         # Temperature plot
         ax1.plot(dates, temperatures, color=colors["temp_line"], linewidth=2, marker='o')
@@ -269,7 +295,8 @@ class VisualFeatures:
         ax4.set_ylabel('mph', color=colors["text"])
         self._style_subplot(ax4, colors)
         
-        plt.tight_layout()
+        if plt is not None:
+            plt.tight_layout()
         return fig
     
     # =============================================================================
@@ -569,8 +596,7 @@ class VisualFeatures:
             frame, text="Weather-based colors", 
             variable=weather_colors_var
         )
-        weather_colors_check.grid(row=1, column=0, columnspan=2, padx=5, pady=5)
-        
+        weather_colors_check.grid(row=1, column=0, columnspan=2, padx=5, pady=5)        
         def on_weather_colors_change():
             self.save_user_preferences({
                 "weather_based_colors": weather_colors_var.get()
@@ -579,16 +605,19 @@ class VisualFeatures:
         weather_colors_check.configure(command=on_weather_colors_change)
         
         return frame
-    
-    # =============================================================================
+      # =============================================================================
     # HELPER METHODS
     # =============================================================================
     
-    def _create_no_data_graph(self, message: str) -> plt.Figure:
+    def _create_no_data_graph(self, message: str) -> Optional[Any]:
         """Create a graph showing no data message"""
+        if plt is None:
+            return None
+            
         colors = self.color_schemes[self.current_theme]
         fig, ax = plt.subplots(figsize=(10, 6))
-        fig.patch.set_facecolor(colors["background"])
+        if hasattr(fig, 'patch'):
+            fig.patch.set_facecolor(colors["background"])  # type: ignore
         ax.set_facecolor(colors["background"])
         
         ax.text(0.5, 0.5, message, transform=ax.transAxes,
@@ -601,7 +630,7 @@ class VisualFeatures:
         
         return fig
     
-    def _style_subplot(self, ax: plt.Axes, colors: Dict[str, str]):
+    def _style_subplot(self, ax: Any, colors: Dict[str, str]):
         """Apply consistent styling to subplot"""
         ax.set_facecolor(colors["background"])
         ax.grid(True, color=colors["grid"], alpha=0.3)
@@ -610,8 +639,11 @@ class VisualFeatures:
         for spine in ax.spines.values():
             spine.set_color(colors["text"])
         
-        ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d'))
-        plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, color=colors["text"])
+        if mdates is not None:
+            ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d'))
+            
+        if plt is not None:
+            plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, color=colors["text"])
     
     def _get_weather_background_color(self, weather_data: Dict[str, Any]) -> Tuple[int, int, int]:
         """Get background color based on weather condition"""
@@ -632,7 +664,7 @@ class VisualFeatures:
         else:
             return (105, 105, 105)  # Dim Gray
     
-    def export_graph_image(self, figure: plt.Figure, filename: str = None) -> str:
+    def export_graph_image(self, figure: Any, filename: Optional[str] = None) -> str:
         """
         Export graph as image file
         
@@ -654,7 +686,7 @@ class VisualFeatures:
         return filepath
 
 # Convenience functions for easy use
-def create_temperature_plot(city: str, days: int = 7, theme: str = "light") -> plt.Figure:
+def create_temperature_plot(city: str, days: int = 7, theme: str = "light") -> Optional[Any]:
     """Create temperature plot with specified theme"""
     visual = VisualFeatures()
     visual.current_theme = theme
@@ -683,14 +715,14 @@ if __name__ == "__main__":
     print("=" * 30)
     
     test_city = "New York"
-    
-    # Test 1: Temperature Graph
+      # Test 1: Temperature Graph
     print(f"\n📈 Testing Temperature Graph for {test_city}:")
     try:
         fig = visual.create_temperature_graph(test_city, 7)
         export_path = visual.export_graph_image(fig, "test_temp_graph.png")
         print(f"✅ Temperature graph created and exported to: {export_path}")
-        plt.close(fig)
+        if plt is not None and fig is not None:
+            plt.close(fig)
     except Exception as e:
         print(f"❌ Temperature graph error: {e}")
     
