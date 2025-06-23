@@ -7,8 +7,31 @@ Create a widget factory for consistent glass-styled components.
 import tkinter as tk
 from tkinter import ttk
 from typing import Dict, Any, Optional
-from PIL import Image, ImageTk
 import io
+
+# Try to import PIL, but provide fallbacks if not available
+try:
+    from PIL import Image, ImageTk
+    PIL_AVAILABLE = True
+except ImportError:
+    print("⚠️ PIL (Pillow) not available. Image features will be disabled.")
+    PIL_AVAILABLE = False
+    # Create fallback classes
+    class MockImage:
+        @staticmethod
+        def open(*args, **kwargs):
+            return None
+        @staticmethod
+        def new(*args, **kwargs):
+            return None
+    
+    class MockImageTk:
+        @staticmethod
+        def PhotoImage(*args, **kwargs):
+            return None
+    
+    Image = MockImage()
+    ImageTk = MockImageTk()
 
 class GlassPanel(tk.Frame):
     """Base class for glassmorphic panels"""

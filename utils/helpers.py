@@ -9,8 +9,38 @@ import urllib.request
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any, Union
 import tkinter as tk
-from PIL import Image, ImageTk
 import io
+
+# Try to import PIL, but provide fallbacks if not available
+try:
+    from PIL import Image, ImageTk
+    PIL_AVAILABLE = True
+except ImportError:
+    print("⚠️ PIL (Pillow) not available. Image features will be disabled.")
+    PIL_AVAILABLE = False
+    # Create fallback classes
+    class MockImage:
+        class Resampling:
+            LANCZOS = None
+        
+        @staticmethod
+        def open(*args, **kwargs):
+            return MockImageInstance()
+        @staticmethod
+        def new(*args, **kwargs):
+            return MockImageInstance()
+    
+    class MockImageInstance:
+        def resize(self, *args, **kwargs):
+            return self
+    
+    class MockImageTk:
+        @staticmethod
+        def PhotoImage(*args, **kwargs):
+            return None
+    
+    Image = MockImage()
+    ImageTk = MockImageTk()
 
 class TemperatureConverter:
     """Utility class for temperature conversions and formatting"""
@@ -234,7 +264,7 @@ class ImageCache:
         os.makedirs(cache_dir, exist_ok=True)
         self.loaded_images = {}  # In-memory cache
     
-    def get_image_from_url(self, url: str, size: tuple = (64, 64)) -> Optional[ImageTk.PhotoImage]:
+    def get_image_from_url(self, url: str, size: tuple = (64, 64)) -> Optional[Any]:
         """
         Get image from URL with local caching
         
@@ -245,7 +275,7 @@ class ImageCache:
         Returns:
             PhotoImage object or None if failed
         """
-        if not url:
+        if not url or not PIL_AVAILABLE:
             return None
         
         # Create cache filename
@@ -270,8 +300,7 @@ class ImageCache:
                 # Save to cache
                 with open(cache_path, 'wb') as f:
                     f.write(image_data)
-            
-            # Load and resize image
+              # Load and resize image
             image = Image.open(io.BytesIO(image_data))
             image = image.resize(size, Image.Resampling.LANCZOS)
             
@@ -287,7 +316,7 @@ class ImageCache:
             print(f"⚠️ Error loading image from {url}: {e}")
             return None
     
-    def get_placeholder_image(self, size: tuple = (64, 64), color: str = "#4a6fa5") -> ImageTk.PhotoImage:
+    def get_placeholder_image(self, size: tuple = (64, 64), color: str = "#4a6fa5") -> Any:
         """
         Create a placeholder image
         
@@ -298,6 +327,9 @@ class ImageCache:
         Returns:
             Placeholder PhotoImage
         """
+        if not PIL_AVAILABLE:
+            return None
+            
         cache_key = f"placeholder_{size[0]}x{size[1]}_{color}"
         
         if cache_key in self.loaded_images:
