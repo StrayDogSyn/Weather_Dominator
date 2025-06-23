@@ -39,7 +39,9 @@ except ImportError as e:
 class GlassmorphicWindow:
     def __init__(self, theme=None):
         self.theme = theme or GlassmorphicTheme()
-        self.root = tk.Tk()        # Initialize components if available
+        self.root = tk.Tk()
+        
+        # Initialize components if available
         if UI_AVAILABLE:
             try:
                 self.weather_api = WeatherAPI() if WeatherAPI is not None else None
@@ -66,7 +68,6 @@ class GlassmorphicWindow:
             
         self.setup_window()
         self.create_glassmorphic_frame()
-        self.add_close_button()
         
         # Initialize alert system after window is created
         if UI_AVAILABLE and CobraAlertSystem is not None:
@@ -86,7 +87,8 @@ class GlassmorphicWindow:
             self.root.wm_attributes('-alpha', self.theme.WINDOW_ALPHA)
             # Remove window decorations for modern look
             self.root.overrideredirect(False)
-              # Set minimum size
+            
+        # Set minimum size
         self.root.minsize(900, 600)
         
     def center_window(self):
@@ -125,6 +127,9 @@ class GlassmorphicWindow:
                             padx=self.theme.PADDING_MEDIUM, 
                             pady=self.theme.PADDING_MEDIUM)
         
+        # Add close button at top-right
+        self.add_close_button()
+        
         # Inner content frame
         self.content_frame = tk.Frame(
             self.glass_frame,
@@ -134,7 +139,7 @@ class GlassmorphicWindow:
         )
         self.content_frame.pack(fill='both', expand=True, 
                               padx=self.theme.PADDING_LARGE, 
-                              pady=self.theme.PADDING_LARGE)
+                              pady=(5, self.theme.PADDING_LARGE))
         
         # Add glassmorphic effect simulation with multiple frames
         self.add_glassmorphic_effects()
@@ -145,11 +150,42 @@ class GlassmorphicWindow:
         # Create two main sections: Weather Data Display and Cobra Intelligence Panel
         self.create_main_sections()
         
+    def add_close_button(self):
+        """Add a custom close button positioned at top-right of glass frame"""
+        close_frame = tk.Frame(self.glass_frame, bg=self.theme.GLASS_BG)
+        close_frame.pack(side='top', fill='x', pady=(5, 0))
+        
+        close_button = tk.Button(
+            close_frame,
+            text="✕",
+            font=('Arial', 14, 'bold'),
+            fg=self.theme.DANGER_COLOR,
+            bg=self.theme.GLASS_BG,
+            activebackground=self.theme.DANGER_COLOR,
+            activeforeground='white',
+            relief='flat',
+            bd=0,
+            padx=8,
+            pady=4,
+            command=self.root.quit
+        )
+        close_button.pack(side='right', padx=(0, 10))
+        
+        # Add hover effects
+        def on_enter(e):
+            close_button.config(bg=self.theme.DANGER_COLOR, fg='white')
+        
+        def on_leave(e):
+            close_button.config(bg=self.theme.GLASS_BG, fg=self.theme.DANGER_COLOR)
+            
+        close_button.bind("<Enter>", on_enter)
+        close_button.bind("<Leave>", on_leave)
+        
     def add_glassmorphic_effects(self):
         """Add visual effects to simulate glassmorphism"""
         # Top highlight for glass effect
         highlight_frame = tk.Frame(
-            self.glass_frame,
+            self.content_frame,
             bg=self.theme.HIGHLIGHT,
             height=self.theme.GLASS_HIGHLIGHT_HEIGHT
         )
@@ -167,7 +203,7 @@ class GlassmorphicWindow:
     def add_title(self):
         """Add the main title to the glassmorphic window"""
         title_frame = tk.Frame(self.content_frame, bg=self.theme.CONTENT_BG)
-        title_frame.pack(fill='x', pady=(20, 40))
+        title_frame.pack(fill='x', pady=(20, 30))
         
         # Main title
         title_label = tk.Label(
@@ -195,38 +231,7 @@ class GlassmorphicWindow:
             bg=self.theme.HIGHLIGHT,
             height=self.theme.SEPARATOR_HEIGHT
         )
-        separator.pack(fill='x', pady=(20, 0), padx=50)
-        
-    def add_close_button(self):
-        """Add a custom close button for borderless window"""
-        close_frame = tk.Frame(self.content_frame, bg=self.theme.CONTENT_BG)
-        close_frame.pack(side='bottom', fill='x', pady=(0, 10))
-        
-        close_button = tk.Button(
-            close_frame,
-            text="✕",
-            font=('Arial', 12, 'bold'),
-            fg=self.theme.DANGER_COLOR,
-            bg=self.theme.BUTTON_BG,
-            activebackground=self.theme.DANGER_COLOR,
-            activeforeground='white',
-            relief='flat',
-            bd=0,
-            padx=10,
-            pady=5,
-            command=self.root.quit
-        )
-        close_button.pack(side='right')
-        
-        # Add hover effects
-        def on_enter(e):
-            close_button.config(bg=self.theme.DANGER_COLOR, fg='white')
-        
-        def on_leave(e):
-            close_button.config(bg=self.theme.BUTTON_BG, fg=self.theme.DANGER_COLOR)
-            
-        close_button.bind("<Enter>", on_enter)
-        close_button.bind("<Leave>", on_leave)
+        separator.pack(fill='x', pady=(15, 0), padx=50)
         
     def create_main_sections(self):
         """Create the two main sections: Weather Data Display and Cobra Intelligence Panel"""

@@ -92,15 +92,18 @@ class WeatherDisplayPanel(GlassPanel):
             font=self.theme.LABEL_FONT,
             fg=self.theme.TEXT_COLOR,
             bg=self.theme.GLASS_BG
-        ).pack(anchor='w')
-        
+        ).pack(anchor='w')        
         self.city_entry = tk.Entry(
             input_frame,
             font=self.theme.BODY_FONT,
             bg=self.theme.INPUT_BG,
-            fg=self.theme.TEXT_COLOR,
-            insertbackground=self.theme.TEXT_COLOR,            relief='flat',
-            bd=0
+            fg=self.theme.INPUT_FG,
+            insertbackground=self.theme.INPUT_FG,
+            relief='solid',
+            bd=1,
+            highlightthickness=1,
+            highlightcolor=self.theme.INPUT_BORDER,
+            highlightbackground=self.theme.INPUT_BORDER
         )
         self.city_entry.pack(fill='x', pady=(5, 10))
         
@@ -268,18 +271,9 @@ class WeatherDisplayPanel(GlassPanel):
         sunrise = data.get('sunrise', '--')
         sunset = data.get('sunset', '--')
         self.sun_times_label.config(text=f"☀️ Sunrise: {sunrise} | 🌅 Sunset: {sunset}")
-        
-        # Update timestamp
+          # Update timestamp
         timestamp = data.get('timestamp', '--')
         self.updated_label.config(text=f"Last Intel: {timestamp}")
-
-        # Update forecast data
-        sunrise = data.get('sunrise', '--')
-        sunset = data.get('sunset', '--')
-        self.sun_times_label.config(text=f"☀️ Sunrise: {sunrise} | 🌅 Sunset: {sunset}")
-        
-        last_updated = data.get('last_updated', '--')
-        self.updated_label.config(text=f"Last Intel: {last_updated}")
 
 class CobraIntelPanel(GlassPanel):
     """Glassmorphic panel for Cobra intelligence data"""
@@ -300,16 +294,18 @@ class CobraIntelPanel(GlassPanel):
             font=self.theme.LABEL_FONT,
             fg=self.theme.TEXT_COLOR,
             bg=self.theme.GLASS_BG
-        ).pack(anchor='w')
-        
+        ).pack(anchor='w')        
         self.character_entry = tk.Entry(
             search_frame,
             font=self.theme.BODY_FONT,
             bg=self.theme.INPUT_BG,
-            fg=self.theme.TEXT_COLOR,
-            insertbackground=self.theme.TEXT_COLOR,
-            relief='flat',
-            bd=0
+            fg=self.theme.INPUT_FG,
+            insertbackground=self.theme.INPUT_FG,
+            relief='solid',
+            bd=1,
+            highlightthickness=1,
+            highlightcolor=self.theme.INPUT_BORDER,
+            highlightbackground=self.theme.INPUT_BORDER
         )
         self.character_entry.pack(fill='x', pady=(5, 10))
         
