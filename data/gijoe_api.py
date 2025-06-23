@@ -17,13 +17,43 @@ class GIJoeAPI:
         """Initialize G.I. Joe Fandom API client"""
         self.base_url = "https://gijoe.fandom.com/api.php"
         self.wiki_url = "https://gijoe.fandom.com/wiki"
+        self.image_base_url = "https://static.wikia.nocookie.net/gijoe/images"
         
-        # Common Cobra characters for fallback
+        # Expanded Cobra character database with detailed information
         self.cobra_characters = [
             "Cobra Commander", "Destro", "Baroness", "Storm Shadow", "Zartan",
             "Dr. Mindbender", "Tomax", "Xamot", "Scrap-Iron", "Firefly",
             "Wild Weasel", "Buzzer", "Ripper", "Torch", "Major Bludd",
-            "Copperhead", "Viper", "Crimson Guard", "Serpentor", "Golobulus"
+            "Copperhead", "Viper", "Crimson Guard", "Serpentor", "Golobulus",
+            "Nemesis Enforcer", "Crystal Ball", "Croc Master", "Overlord",
+            "Big Boa", "Iron Grenadier", "Range-Viper", "Techno-Viper",
+            "Tele-Viper", "Night-Viper", "Alley-Viper", "Snow Serpent",
+            "Desert Scorpion", "Hydro-Viper", "Aero-Viper", "Ast-Viper",
+            "Cesspool", "Gnawgahyde", "Road Pig", "Skull Buster",
+            "Headhunter", "Darklon", "Voltar", "Python Patrol"
+        ]
+        
+        # Cobra vehicle and weapon data
+        self.cobra_vehicles = [
+            "HISS Tank", "Cobra Flight Pod", "Rattler", "Mamba", "Stinger",
+            "Ferret ATV", "Water Moccasin", "Moray Hydrofoil", "Devilfish",
+            "Terror Drome", "Firebat", "Night Raven", "Conquest X-30",
+            "Phantom X-19", "Hammerhead", "Bugg", "Pogo", "ASP"
+        ]
+        
+        # Cobra organization structure
+        self.cobra_hierarchy = {
+            "Supreme Leader": ["Cobra Commander", "Serpentor"],
+            "High Command": ["Destro", "Baroness", "Dr. Mindbender"],
+            "Field Commanders": ["Major Bludd", "Firefly", "Storm Shadow"],
+            "Specialists": ["Zartan", "Tomax", "Xamot", "Wild Weasel"],
+            "Troops": ["Viper", "Crimson Guard", "Alley-Viper", "Range-Viper"]
+        }
+        
+        # Cobra base locations
+        self.cobra_bases = [
+            "Cobra Island", "Terror Drome", "Silent Castle", "Cobra Mountain",
+            "Extensive Enterprises", "M.A.R.S. Industries", "Trans-Carpathian"
         ]
     
     def search_character(self, character_name: str) -> Dict[str, Any]:
@@ -260,56 +290,602 @@ class GIJoeAPI:
         clean_text = ' '.join(clean_text.split())
         
         return clean_text
+    
+    def get_cobra_intel_package(self, character_name: str) -> Dict[str, Any]:
+        """
+        Get comprehensive Cobra intelligence package for a character
+        
+        Args:
+            character_name: Name of the character
+            
+        Returns:
+            Comprehensive character intelligence package
+        """
+        base_data = self.get_character_data(character_name)
+        
+        if "error" in base_data:
+            return base_data
+        
+        # Enhance with additional intelligence
+        intel_package = base_data.copy()
+        intel_package.update({
+            "rank": self._get_cobra_rank(character_name),
+            "specialties": self._get_character_specialties(base_data.get("full_bio", "")),
+            "vehicles": self._get_associated_vehicles(character_name),
+            "allies": self._get_character_allies(character_name),
+            "threat_level": self._assess_threat_level(base_data.get("full_bio", "")),
+            "base_of_operations": self._get_base_operations(character_name),
+            "first_appearance": self._extract_first_appearance(base_data.get("full_bio", "")),
+            "image_gallery": self._get_character_images(character_name),
+            "cobra_classification": self._classify_cobra_member(character_name, base_data.get("full_bio", ""))
+        })
+        
+        return intel_package
+    
+    def get_cobra_vehicle_data(self, vehicle_name: str) -> Dict[str, Any]:
+        """
+        Get detailed information about Cobra vehicles and equipment
+        
+        Args:
+            vehicle_name: Name of the vehicle
+            
+        Returns:
+            Vehicle data dictionary
+        """
+        try:
+            # Search for vehicle information
+            params = {
+                "action": "query",
+                "format": "json",
+                "titles": vehicle_name,
+                "prop": "extracts|pageimages|info",
+                "exintro": True,
+                "explaintext": True,
+                "piprop": "original",
+                "inprop": "url"
+            }
+            
+            response = requests.get(self.base_url, params=params, timeout=10)
+            response.raise_for_status()
+            
+            data = response.json()
+            pages = data.get("query", {}).get("pages", {})
+            
+            if not pages:
+                return {"error": f"No vehicle data found for '{vehicle_name}'"}
+            
+            page_id = list(pages.keys())[0]
+            page_data = pages[page_id]
+            
+            if page_id == "-1":
+                return {"error": f"Vehicle not found: '{vehicle_name}'"}
+            
+            vehicle_data = {
+                "name": page_data.get("title", vehicle_name),
+                "description": self._extract_bio(page_data.get("extract", "")),
+                "full_description": page_data.get("extract", ""),
+                "image_url": self._get_image_url(page_data),
+                "wiki_url": page_data.get("fullurl", f"{self.wiki_url}/{quote(vehicle_name)}"),
+                "vehicle_type": self._classify_vehicle_type(page_data.get("extract", "")),
+                "crew_size": self._extract_crew_info(page_data.get("extract", "")),
+                "armament": self._extract_armament_info(page_data.get("extract", "")),
+                "specifications": self._extract_specifications(page_data.get("extract", ""))
+            }
+            
+            return vehicle_data
+            
+        except Exception as e:
+            return {"error": f"Vehicle data error: {str(e)}"}
+    
+    def get_cobra_hierarchy_data(self) -> Dict[str, Any]:
+        """
+        Get complete Cobra organization hierarchy
+        
+        Returns:
+            Cobra hierarchy with character details
+        """
+        hierarchy_with_details = {}
+        
+        for rank, characters in self.cobra_hierarchy.items():
+            hierarchy_with_details[rank] = []
+            
+            for character in characters:
+                char_data = self.get_character_data(character)
+                if "error" not in char_data:
+                    hierarchy_with_details[rank].append({
+                        "name": char_data["name"],
+                        "bio": char_data["bio"],
+                        "image_url": char_data.get("image_url"),
+                        "wiki_url": char_data["wiki_url"],
+                        "specialties": self._get_character_specialties(char_data.get("full_bio", ""))
+                    })
+        
+        return {
+            "hierarchy": hierarchy_with_details,
+            "total_members": sum(len(chars) for chars in hierarchy_with_details.values()),
+            "organization_structure": "Terrorist Organization",
+            "primary_goal": "World Domination",
+            "headquarters": "Cobra Island"
+        }
+    
+    def get_multiple_character_images(self, character_names: List[str]) -> Dict[str, List[str]]:
+        """
+        Get multiple images for multiple characters
+        
+        Args:
+            character_names: List of character names
+            
+        Returns:
+            Dictionary mapping character names to lists of image URLs
+        """
+        character_images = {}
+        
+        for character in character_names:
+            character_images[character] = self._get_character_images(character)
+        
+        return character_images
+    
+    def get_cobra_mission_briefing(self, scenario: str = "weather_domination") -> Dict[str, Any]:
+        """
+        Generate a Cobra mission briefing based on scenario
+        
+        Args:
+            scenario: Type of mission scenario
+            
+        Returns:
+            Mission briefing data
+        """
+        mission_templates = {
+            "weather_domination": {
+                "mission_name": "Operation Weather Dominator",
+                "objective": "Deploy weather control technology to achieve global supremacy",
+                "primary_agents": ["Cobra Commander", "Dr. Mindbender", "Destro"],
+                "support_units": ["Techno-Viper", "Crimson Guard", "Viper"],
+                "vehicles": ["Weather Dominator", "HISS Tank", "Rattler"],
+                "target_locations": ["Major Population Centers", "Military Installations"],
+                "threat_assessment": "MAXIMUM",
+                "countermeasures": "G.I. Joe Response Expected"
+            },
+            "infiltration": {
+                "mission_name": "Operation Silent Strike",
+                "objective": "Infiltrate enemy installations and gather intelligence",
+                "primary_agents": ["Storm Shadow", "Firefly", "Zartan"],
+                "support_units": ["Night-Viper", "Alley-Viper"],
+                "vehicles": ["Night Raven", "Ferret ATV"],
+                "target_locations": ["Government Facilities", "Military Bases"],
+                "threat_assessment": "HIGH",
+                "countermeasures": "Stealth Operations Required"
+            }
+        }
+        
+        template = mission_templates.get(scenario, mission_templates["weather_domination"])
+        
+        # Add character details to the briefing
+        enhanced_briefing = template.copy()
+        enhanced_briefing["agent_profiles"] = []
+        
+        for agent in template["primary_agents"]:
+            agent_data = self.get_character_data(agent)
+            if "error" not in agent_data:
+                enhanced_briefing["agent_profiles"].append({
+                    "name": agent_data["name"],
+                    "role": self._get_cobra_rank(agent),
+                    "bio": agent_data["bio"],
+                    "image_url": agent_data.get("image_url"),
+                    "specialties": self._get_character_specialties(agent_data.get("full_bio", ""))
+                })
+        
+        return enhanced_briefing
 
-# Convenience functions for easy use
+    def _get_character_images(self, character_name: str) -> List[str]:
+        """
+        Get multiple images for a character from the wiki
+        
+        Args:
+            character_name: Name of the character
+            
+        Returns:
+            List of image URLs
+        """
+        try:
+            params = {
+                "action": "query",
+                "format": "json",
+                "titles": character_name,
+                "prop": "images",
+                "imlimit": 10
+            }
+            
+            response = requests.get(self.base_url, params=params, timeout=10)
+            response.raise_for_status()
+            
+            data = response.json()
+            pages = data.get("query", {}).get("pages", {})
+            
+            if not pages:
+                return []
+            
+            page_id = list(pages.keys())[0]
+            page_data = pages[page_id]
+            
+            if page_id == "-1":
+                return []
+            
+            images = page_data.get("images", [])
+            image_urls = []
+            
+            # Get image details for each image
+            for image in images[:5]:  # Limit to 5 images
+                image_title = image["title"]
+                image_url = self._get_image_url_from_title(image_title)
+                if image_url and self._is_character_image(image_title, character_name):
+                    image_urls.append(image_url)
+            
+            return image_urls
+            
+        except Exception as e:
+            return []
+    
+    def _get_image_url_from_title(self, image_title: str) -> Optional[str]:
+        """Get direct image URL from image title"""
+        try:
+            params = {
+                "action": "query",
+                "format": "json",
+                "titles": image_title,
+                "prop": "imageinfo",
+                "iiprop": "url"
+            }
+            
+            response = requests.get(self.base_url, params=params, timeout=5)
+            response.raise_for_status()
+            
+            data = response.json()
+            pages = data.get("query", {}).get("pages", {})
+            
+            if pages:
+                page_id = list(pages.keys())[0]
+                page_data = pages[page_id]
+                imageinfo = page_data.get("imageinfo", [])
+                
+                if imageinfo:
+                    return imageinfo[0].get("url")
+            
+            return None
+            
+        except Exception:
+            return None
+    
+    def _is_character_image(self, image_title: str, character_name: str) -> bool:
+        """Check if image is related to the character"""
+        image_lower = image_title.lower()
+        char_lower = character_name.lower()
+        
+        # Check if character name is in image title
+        if any(word in image_lower for word in char_lower.split()):
+            return True
+        
+        # Exclude common non-character images
+        exclude_terms = ["logo", "symbol", "icon", "banner", "template"]
+        return not any(term in image_lower for term in exclude_terms)
+    
+    def _get_cobra_rank(self, character_name: str) -> str:
+        """Determine Cobra rank/position for a character"""
+        for rank, characters in self.cobra_hierarchy.items():
+            if character_name in characters:
+                return rank
+        return "Unknown Operative"
+    
+    def _get_character_specialties(self, bio_text: str) -> List[str]:
+        """Extract character specialties from bio text"""
+        specialties = []
+        bio_lower = bio_text.lower()
+        
+        specialty_keywords = {
+            "Combat": ["combat", "fighting", "warrior", "soldier", "martial"],
+            "Technology": ["technology", "tech", "scientist", "engineer", "computer"],
+            "Espionage": ["spy", "infiltration", "stealth", "intelligence", "covert"],
+            "Leadership": ["leader", "command", "commander", "director", "chief"],
+            "Weapons": ["weapons", "armament", "arsenal", "explosive", "demolition"],
+            "Vehicles": ["pilot", "driver", "vehicle", "aircraft", "tank"],
+            "Medical": ["doctor", "medical", "surgeon", "health", "mind"],
+            "Disguise": ["disguise", "impersonation", "shapeshifter", "mimic"],
+            "Assassination": ["assassin", "killer", "elimination", "sniper"],
+            "Sabotage": ["sabotage", "destruction", "disruption", "chaos"]
+        }
+        
+        for specialty, keywords in specialty_keywords.items():
+            if any(keyword in bio_lower for keyword in keywords):
+                specialties.append(specialty)
+        
+        return specialties[:3]  # Limit to top 3 specialties
+    
+    def _get_associated_vehicles(self, character_name: str) -> List[str]:
+        """Get vehicles associated with a character"""
+        vehicle_associations = {
+            "Cobra Commander": ["HISS Tank", "Rattler", "Terror Drome"],
+            "Destro": ["HISS Tank", "Iron Grenadier vehicles"],
+            "Wild Weasel": ["Rattler", "Conquest X-30"],
+            "Copperhead": ["Water Moccasin", "Moray Hydrofoil"],
+            "Storm Shadow": ["Night Raven", "Phantom X-19"],
+            "Firefly": ["Devilfish", "Saboteur vehicles"],
+            "Major Bludd": ["HISS Tank", "Military vehicles"]
+        }
+        
+        return vehicle_associations.get(character_name, [])
+    
+    def _get_character_allies(self, character_name: str) -> List[str]:
+        """Get known allies for a character"""
+        ally_networks = {
+            "Cobra Commander": ["Destro", "Baroness", "Dr. Mindbender"],
+            "Destro": ["Cobra Commander", "Baroness", "Iron Grenadiers"],
+            "Baroness": ["Destro", "Cobra Commander", "Zartan"],
+            "Storm Shadow": ["Snake Eyes", "Hard Master", "Zartan"],
+            "Tomax": ["Xamot", "Crimson Guard"],
+            "Xamot": ["Tomax", "Crimson Guard"],
+            "Dr. Mindbender": ["Cobra Commander", "Serpentor", "B.A.T.s"]
+        }
+        
+        return ally_networks.get(character_name, [])
+    
+    def _assess_threat_level(self, bio_text: str) -> str:
+        """Assess threat level based on character description"""
+        bio_lower = bio_text.lower()
+        
+        high_threat_terms = ["commander", "leader", "deadly", "dangerous", "ruthless", "supreme"]
+        medium_threat_terms = ["skilled", "trained", "experienced", "specialist"]
+        
+        if any(term in bio_lower for term in high_threat_terms):
+            return "MAXIMUM"
+        elif any(term in bio_lower for term in medium_threat_terms):
+            return "HIGH"
+        else:
+            return "MODERATE"
+    
+    def _get_base_operations(self, character_name: str) -> str:
+        """Get primary base of operations for character"""
+        base_assignments = {
+            "Cobra Commander": "Cobra Island",
+            "Destro": "Castle Destro, Scotland",
+            "Baroness": "Trans-Carpathian Castle",
+            "Dr. Mindbender": "Cobra Laboratory Complex",
+            "Serpentor": "Cobra Temple",
+            "Storm Shadow": "Silent Castle, Japan"
+        }
+        
+        return base_assignments.get(character_name, "Unknown Location")
+    
+    def _extract_first_appearance(self, bio_text: str) -> str:
+        """Extract first appearance information from bio"""
+        # Look for patterns like "first appeared in" or "introduced in"
+        patterns = [
+            r"first appeared in ([^.]+)",
+            r"introduced in ([^.]+)",
+            r"debuted in ([^.]+)"
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, bio_text, re.IGNORECASE)
+            if match:
+                return match.group(1).strip()
+        
+        return "Unknown"
+    
+    def _classify_cobra_member(self, character_name: str, bio_text: str) -> Dict[str, str]:
+        """Classify the type of Cobra member"""
+        classification = {
+            "category": "Unknown",
+            "division": "General Forces",
+            "loyalty": "Cobra"
+        }
+        
+        bio_lower = bio_text.lower()
+        name_lower = character_name.lower()
+        
+        # Determine category
+        if any(term in name_lower for term in ["commander", "leader"]):
+            classification["category"] = "Leadership"
+        elif any(term in bio_lower for term in ["scientist", "doctor", "engineer"]):
+            classification["category"] = "Scientific Division"
+        elif any(term in name_lower for term in ["viper", "guard", "trooper"]):
+            classification["category"] = "Infantry"
+        elif any(term in bio_lower for term in ["pilot", "driver"]):
+            classification["category"] = "Vehicle Operations"
+        elif any(term in bio_lower for term in ["spy", "infiltrator", "assassin"]):
+            classification["category"] = "Special Operations"
+          # Determine division
+        if "destro" in bio_lower or "iron grenadier" in bio_lower:
+            classification["division"] = "Iron Grenadiers"
+        elif "dreadnok" in bio_lower:
+            classification["division"] = "Dreadnoks"
+        elif "crimson guard" in name_lower:
+            classification["division"] = "Crimson Guard"
+        
+        return classification
+    
+    def _classify_vehicle_type(self, description: str) -> str:
+        """Classify vehicle type from description"""
+        desc_lower = description.lower()
+        
+        if any(term in desc_lower for term in ["aircraft", "plane", "jet", "helicopter"]):
+            return "Aircraft"
+        elif any(term in desc_lower for term in ["tank", "armor", "tracked"]):
+            return "Armored Vehicle"
+        elif any(term in desc_lower for term in ["boat", "ship", "submarine", "water"]):
+            return "Naval Vessel"
+        elif any(term in desc_lower for term in ["base", "installation", "complex"]):
+            return "Installation"
+        else:
+            return "Ground Vehicle"
+    
+    def _extract_crew_info(self, description: str) -> str:
+        """Extract crew size information"""
+        patterns = [
+            r"crew of (\d+)",
+            r"(\d+) crew members",
+            r"operated by (\d+)",
+            r"single pilot",
+            r"pilot"
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, description, re.IGNORECASE)
+            if match:
+                if "single pilot" in match.group(0).lower():
+                    return "1 (Pilot)"
+                elif "pilot" in match.group(0).lower() and not match.groups():
+                    return "1 (Pilot)"
+                else:
+                    return match.group(1) if match.groups() else match.group(0)
+        
+        return "Unknown"
+    
+    def _extract_armament_info(self, description: str) -> List[str]:
+        """Extract armament information"""
+        armaments = []
+        desc_lower = description.lower()
+        
+        weapon_terms = [
+            "laser", "missile", "cannon", "gun", "rocket", "torpedo",
+            "plasma", "energy weapon", "machinegun", "autocannon"
+        ]
+        
+        for weapon in weapon_terms:
+            if weapon in desc_lower:
+                armaments.append(weapon.title())
+        
+        return armaments[:5]  # Limit to 5 weapons
+    
+    def _extract_specifications(self, description: str) -> Dict[str, str]:
+        """Extract technical specifications"""
+        specs = {}
+        
+        # Look for speed, range, etc.
+        speed_match = re.search(r"speed of ([^.]+)", description, re.IGNORECASE)
+        if speed_match:
+            specs["max_speed"] = speed_match.group(1).strip()
+        
+        range_match = re.search(r"range of ([^.]+)", description, re.IGNORECASE)
+        if range_match:
+            specs["range"] = range_match.group(1).strip()
+        
+        return specs
+
+# Enhanced Convenience functions for easy use
 def get_cobra_character(character_name: str) -> Dict[str, Any]:
-    """Convenience function to get Cobra character data"""
+    """Enhanced convenience function to get Cobra character data"""
     gijoe_api = GIJoeAPI()
     return gijoe_api.get_character_data(character_name)
+
+def get_cobra_intel_package(character_name: str) -> Dict[str, Any]:
+    """Get comprehensive Cobra intelligence package"""
+    gijoe_api = GIJoeAPI()
+    return gijoe_api.get_cobra_intel_package(character_name)
 
 def get_random_cobra() -> Dict[str, Any]:
     """Convenience function to get a random Cobra character"""
     gijoe_api = GIJoeAPI()
     return gijoe_api.get_random_cobra_character()
 
+def get_cobra_vehicle_intel(vehicle_name: str) -> Dict[str, Any]:
+    """Get Cobra vehicle intelligence data"""
+    gijoe_api = GIJoeAPI()
+    return gijoe_api.get_cobra_vehicle_data(vehicle_name)
+
+def get_cobra_hierarchy() -> Dict[str, Any]:
+    """Get complete Cobra organization hierarchy"""
+    gijoe_api = GIJoeAPI()
+    return gijoe_api.get_cobra_hierarchy_data()
+
+def get_mission_briefing(scenario: str = "weather_domination") -> Dict[str, Any]:
+    """Generate Cobra mission briefing"""
+    gijoe_api = GIJoeAPI()
+    return gijoe_api.get_cobra_mission_briefing(scenario)
+
 def search_cobra_intel(query: str) -> List[Dict[str, Any]]:
     """Convenience function to search Cobra intelligence"""
     gijoe_api = GIJoeAPI()
     return gijoe_api.search_cobra_characters(query)
 
+def get_cobra_image_gallery(characters: List[str]) -> Dict[str, List[str]]:
+    """Get image galleries for multiple Cobra characters"""
+    gijoe_api = GIJoeAPI()
+    return gijoe_api.get_multiple_character_images(characters)
+
 # Example usage and testing
 if __name__ == "__main__":
-    # Test the G.I. Joe API
+    # Test the Enhanced G.I. Joe API
     gijoe_api = GIJoeAPI()
     
-    # Test characters
-    test_characters = ["Cobra Commander", "Destro", "Baroness", "Storm Shadow"]
+    print("🐍 COBRA Intelligence System - Enhanced Features Test 🐍")
+    print("=" * 60)
     
-    for character in test_characters:
-        print(f"\n🐍 Testing Cobra Intel for {character}:")
-        char_data = gijoe_api.get_character_data(character)
-        
-        if "error" in char_data:
-            print(f"❌ Error: {char_data['error']}")
-        else:
-            print(f"✅ Name: {char_data['name']}")
-            print(f"✅ Bio: {char_data['bio']}")
-            print(f"✅ Is Cobra: {char_data['is_cobra']}")
-            if char_data['image_url']:
-                print(f"✅ Image: Available")
-            print(f"✅ Wiki: {char_data['wiki_url']}")
+    # Test enhanced character data
+    test_character = "Cobra Commander"
+    print(f"\n📋 Testing Enhanced Intel Package for {test_character}:")
+    intel_package = gijoe_api.get_cobra_intel_package(test_character)
+    
+    if "error" not in intel_package:
+        print(f"✅ Name: {intel_package['name']}")
+        print(f"✅ Rank: {intel_package['rank']}")
+        print(f"✅ Threat Level: {intel_package['threat_level']}")
+        print(f"✅ Base of Operations: {intel_package['base_of_operations']}")
+        print(f"✅ Specialties: {', '.join(intel_package['specialties'])}")
+        print(f"✅ Vehicles: {', '.join(intel_package['vehicles'])}")
+        print(f"✅ Classification: {intel_package['cobra_classification']['category']}")
+        if intel_package['image_gallery']:
+            print(f"✅ Images Available: {len(intel_package['image_gallery'])}")
+    else:
+        print(f"❌ Error: {intel_package['error']}")
+    
+    # Test vehicle data
+    print(f"\n🚁 Testing Vehicle Intelligence for HISS Tank:")
+    vehicle_data = gijoe_api.get_cobra_vehicle_data("HISS Tank")
+    
+    if "error" not in vehicle_data:
+        print(f"✅ Vehicle: {vehicle_data['name']}")
+        print(f"✅ Type: {vehicle_data['vehicle_type']}")
+        print(f"✅ Crew: {vehicle_data['crew_size']}")
+        print(f"✅ Armament: {', '.join(vehicle_data['armament'])}")
+    else:
+        print(f"❌ Error: {vehicle_data['error']}")
+    
+    # Test hierarchy data
+    print(f"\n🏢 Testing Cobra Organization Hierarchy:")
+    hierarchy = gijoe_api.get_cobra_hierarchy_data()
+    
+    print(f"✅ Organization: {hierarchy['organization_structure']}")
+    print(f"✅ Primary Goal: {hierarchy['primary_goal']}")
+    print(f"✅ Total Members: {hierarchy['total_members']}")
+    print(f"✅ Headquarters: {hierarchy['headquarters']}")
+    
+    for rank, members in hierarchy['hierarchy'].items():
+        if members:
+            print(f"  🎖️ {rank}: {len(members)} members")
+    
+    # Test mission briefing
+    print(f"\n📊 Testing Mission Briefing Generation:")
+    mission = gijoe_api.get_cobra_mission_briefing("weather_domination")
+    
+    print(f"✅ Mission: {mission['mission_name']}")
+    print(f"✅ Objective: {mission['objective']}")
+    print(f"✅ Threat Assessment: {mission['threat_assessment']}")
+    print(f"✅ Primary Agents: {', '.join(mission['primary_agents'])}")
+    print(f"✅ Agent Profiles: {len(mission['agent_profiles'])} detailed profiles")
     
     # Test random character
-    print(f"\n🎲 Random Cobra Character:")
+    print(f"\n🎲 Testing Random Cobra Character:")
     random_char = gijoe_api.get_random_cobra_character()
     if "error" not in random_char:
-        print(f"✅ {random_char['name']}: {random_char['bio']}")
+        print(f"✅ Random Selection: {random_char['name']}")
+        print(f"✅ Bio: {random_char['bio']}")
     
-    # Test search
-    print(f"\n🔍 Searching for Cobra characters:")
-    search_results = gijoe_api.search_cobra_characters("Cobra")
-    for i, result in enumerate(search_results[:3]):  # Show first 3 results
-        if "error" not in result:
-            print(f"✅ {i+1}. {result['name']}")
-        else:
-            print(f"❌ {result['error']}")
+    # Test image gallery
+    print(f"\n🖼️ Testing Image Gallery for Top Characters:")
+    top_characters = ["Cobra Commander", "Destro", "Baroness"]
+    image_gallery = gijoe_api.get_multiple_character_images(top_characters)
+    
+    for char, images in image_gallery.items():
+        print(f"✅ {char}: {len(images)} images available")
+    
+    print(f"\n🐍 COBRA Intelligence System Test Complete! 🐍")
