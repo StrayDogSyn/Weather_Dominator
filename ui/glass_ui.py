@@ -11,7 +11,7 @@ import io
 
 # Try to import PIL, but provide fallbacks if not available
 try:
-    from PIL import Image, ImageTk
+    from PIL import Image, ImageTk # type: ignore
     PIL_AVAILABLE = True
 except ImportError:
     print("⚠️ PIL (Pillow) not available. Image features will be disabled.")
