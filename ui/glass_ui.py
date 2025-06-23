@@ -99,8 +99,7 @@ class WeatherDisplayPanel(GlassPanel):
             font=self.theme.BODY_FONT,
             bg=self.theme.INPUT_BG,
             fg=self.theme.TEXT_COLOR,
-            insertbackground=self.theme.TEXT_COLOR,
-            relief='flat',
+            insertbackground=self.theme.TEXT_COLOR,            relief='flat',
             bd=0
         )
         self.city_entry.pack(fill='x', pady=(5, 10))
@@ -186,6 +185,39 @@ class WeatherDisplayPanel(GlassPanel):
             bg=self.theme.GLASS_BG
         )
         self.pressure_label.pack(anchor='w')
+        
+        # Forecast section
+        forecast_frame = tk.Frame(display_frame, bg=self.theme.GLASS_BG)
+        forecast_frame.pack(fill='x', pady=(15, 0))
+        
+        forecast_title = tk.Label(
+            forecast_frame,
+            text="📊 TACTICAL FORECAST",
+            font=self.theme.LABEL_FONT,
+            fg=self.theme.PRIMARY_ACCENT,
+            bg=self.theme.GLASS_BG
+        )
+        forecast_title.pack()
+        
+        # Sun times
+        self.sun_times_label = tk.Label(
+            forecast_frame,
+            text="☀️ Sunrise: -- | 🌅 Sunset: --",
+            font=self.theme.SMALL_FONT,
+            fg=self.theme.TEXT_COLOR,
+            bg=self.theme.GLASS_BG
+        )
+        self.sun_times_label.pack(pady=(5, 0))
+        
+        # Last updated
+        self.updated_label = tk.Label(
+            forecast_frame,
+            text="Last Intel: --",
+            font=('Arial', 8),
+            fg=self.theme.MUTED_TEXT,
+            bg=self.theme.GLASS_BG
+        )
+        self.updated_label.pack(pady=(5, 0))
     
     def update_weather_data(self, data: Dict[str, Any]):
         """Update the weather display with new data"""
@@ -198,38 +230,56 @@ class WeatherDisplayPanel(GlassPanel):
             self.icon_label.config(text="⚠️")
             return
         
-        # Update temperature
-        temp = data.get('temperature', '--')
+        # Update temperature with city name
+        temp = data.get('temp', '--')
+        city = data.get('city', 'Unknown')
+        country = data.get('country', '')
+        location = f"{city}, {country}" if country else city
         self.temp_label.config(text=f"{temp}°F", fg=self.theme.TEXT_COLOR)
         
-        # Update description
+        # Update description with location
         desc = data.get('description', 'Unknown conditions')
-        self.desc_label.config(text=desc.title())
+        self.desc_label.config(text=f"{desc}\n{location}")
         
-        # Update additional info
+        # Update additional info with more details
         humidity = data.get('humidity', '--')
-        self.humidity_label.config(text=f"Humidity: {humidity}%")
+        self.humidity_label.config(text=f"💧 Humidity: {humidity}%")
         
         wind_speed = data.get('wind_speed', '--')
-        self.wind_label.config(text=f"Wind: {wind_speed} mph")
+        feels_like = data.get('feels_like', '--')
+        self.wind_label.config(text=f"💨 Wind: {wind_speed} mph | Feels like: {feels_like}°F")
         
         pressure = data.get('pressure', '--')
-        self.pressure_label.config(text=f"Pressure: {pressure} hPa")
+        visibility = data.get('visibility', '--')
+        self.pressure_label.config(text=f"📊 Pressure: {pressure} hPa | Visibility: {visibility} km")
+          # Update weather icon based on condition
+        icon_code = data.get('icon', '')
+        weather_icons = {
+            '01d': '☀️', '01n': '🌙', '02d': '⛅', '02n': '☁️',
+            '03d': '☁️', '03n': '☁️', '04d': '☁️', '04n': '☁️',
+            '09d': '🌦️', '09n': '🌧️', '10d': '🌦️', '10n': '🌧️',
+            '11d': '⛈️', '11n': '⛈️', '13d': '❄️', '13n': '❄️',
+            '50d': '🌫️', '50n': '🌫️'
+        }
+        icon = weather_icons.get(icon_code, '🌤️')
+        self.icon_label.config(text=icon)
         
-        # Update weather icon based on condition
-        condition = data.get('condition', '').lower()
-        if 'rain' in condition:
-            self.icon_label.config(text="🌧️")
-        elif 'storm' in condition:
-            self.icon_label.config(text="⛈️")
-        elif 'snow' in condition:
-            self.icon_label.config(text="❄️")
-        elif 'cloud' in condition:
-            self.icon_label.config(text="☁️")
-        elif 'clear' in condition:
-            self.icon_label.config(text="☀️")
-        else:
-            self.icon_label.config(text="🌤️")
+        # Update sun times if available
+        sunrise = data.get('sunrise', '--')
+        sunset = data.get('sunset', '--')
+        self.sun_times_label.config(text=f"☀️ Sunrise: {sunrise} | 🌅 Sunset: {sunset}")
+        
+        # Update timestamp
+        timestamp = data.get('timestamp', '--')
+        self.updated_label.config(text=f"Last Intel: {timestamp}")
+
+        # Update forecast data
+        sunrise = data.get('sunrise', '--')
+        sunset = data.get('sunset', '--')
+        self.sun_times_label.config(text=f"☀️ Sunrise: {sunrise} | 🌅 Sunset: {sunset}")
+        
+        last_updated = data.get('last_updated', '--')
+        self.updated_label.config(text=f"Last Intel: {last_updated}")
 
 class CobraIntelPanel(GlassPanel):
     """Glassmorphic panel for Cobra intelligence data"""
@@ -321,6 +371,49 @@ class CobraIntelPanel(GlassPanel):
             bg=self.theme.GLASS_BG
         )
         self.char_affiliation_label.pack(anchor='w')
+        
+        # Status section
+        status_frame = tk.Frame(display_frame, bg=self.theme.GLASS_BG)
+        status_frame.pack(fill='x', pady=(15, 0))
+        
+        status_title = tk.Label(
+            status_frame,
+            text="📊 OPERATIONAL STATUS",
+            font=self.theme.LABEL_FONT,
+            fg="#dc143c",
+            bg=self.theme.GLASS_BG
+        )
+        status_title.pack()
+        
+        # Database status
+        self.db_status_label = tk.Label(
+            status_frame,
+            text="🗃️ Database: ONLINE",
+            font=self.theme.SMALL_FONT,
+            fg=self.theme.TEXT_COLOR,
+            bg=self.theme.GLASS_BG
+        )
+        self.db_status_label.pack(anchor='w', pady=(5, 0))
+        
+        # Security level
+        self.security_label = tk.Label(
+            status_frame,
+            text="🔒 Security Level: CLASSIFIED",
+            font=self.theme.SMALL_FONT,
+            fg="#dc143c",
+            bg=self.theme.GLASS_BG
+        )
+        self.security_label.pack(anchor='w')
+        
+        # Last operation
+        self.last_op_label = tk.Label(
+            status_frame,
+            text="Last Operation: --",
+            font=('Arial', 8),
+            fg=self.theme.MUTED_TEXT,
+            bg=self.theme.GLASS_BG
+        )
+        self.last_op_label.pack(anchor='w', pady=(5, 0))
     
     def update_character_data(self, data: Dict[str, Any]):
         """Update the character display with new data"""
@@ -335,19 +428,43 @@ class CobraIntelPanel(GlassPanel):
         name = data.get('name', 'Unknown Subject')
         self.char_name_label.config(text=name.upper(), fg="#dc143c")
         
-        bio = data.get('bio', 'No intelligence available.')
+        bio = data.get('biography', data.get('bio', 'No intelligence available.'))
+        if len(bio) > 150:
+            bio = bio[:150] + "..."
         self.char_bio_label.config(text=bio)
         
-        affiliation = data.get('affiliation', 'Unknown')
-        self.char_affiliation_label.config(text=f"Affiliation: {affiliation}")
+        affiliation = data.get('affiliation', data.get('team', 'Unknown'))
+        speciality = data.get('speciality', data.get('specialty', ''))
         
-        # Update character image/icon
-        if 'cobra' in name.lower() or 'cobra' in affiliation.lower():
+        affiliation_text = f"🎖️ Team: {affiliation}"
+        if speciality:
+            affiliation_text += f"\n⚡ Specialty: {speciality}"
+        
+        self.char_affiliation_label.config(text=affiliation_text)
+          # Update character image/icon based on affiliation
+        if 'cobra' in affiliation.lower():
             self.char_image_label.config(text="🐍")
-        elif 'joe' in affiliation.lower():
+        elif 'joe' in affiliation.lower() or 'gi joe' in affiliation.lower():
             self.char_image_label.config(text="🪖")
+        elif 'villain' in str(data).lower():
+            self.char_image_label.config(text="😈")
         else:
             self.char_image_label.config(text="👤")
+        
+        # Update status information
+        self.db_status_label.config(text="🗃️ Database: INTEL ACQUIRED")
+        
+        # Set security level based on affiliation
+        if 'cobra' in affiliation.lower():
+            self.security_label.config(text="🔒 Security Level: COBRA EYES ONLY")
+        elif 'joe' in affiliation.lower():
+            self.security_label.config(text="🔒 Security Level: CLASSIFIED")
+        else:
+            self.security_label.config(text="🔒 Security Level: RESTRICTED")
+          # Update last operation timestamp
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        self.last_op_label.config(text=f"Last Operation: {timestamp}")
 
 class CobraAlertSystem:
     """Glassmorphic alert system for COBRA-style notifications"""

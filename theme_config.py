@@ -46,6 +46,15 @@ class GlassmorphicTheme:
     SUBTITLE_FONT = ('Arial', 12)
     BODY_FONT = ('Arial', 10)
     BUTTON_FONT = ('Arial', 10, 'bold')
+    SECTION_FONT = ('Arial', 12, 'bold')
+    LABEL_FONT = ('Arial', 9, 'bold')
+    SMALL_FONT = ('Arial', 8)
+    LARGE_FONT = ('Arial', 18, 'bold')
+    
+    # Input colors
+    INPUT_BG = '#1a2451'
+    INPUT_FG = '#ffffff'
+    INPUT_BORDER = '#4a6fa5'
     
     # Window properties
     WINDOW_ALPHA = 0.95

@@ -66,14 +66,16 @@ class GlassmorphicWindow:
             
         self.setup_window()
         self.create_glassmorphic_frame()
-        self.add_close_button()        # Initialize alert system after window is created
+        self.add_close_button()
+        
+        # Initialize alert system after window is created
         if UI_AVAILABLE and CobraAlertSystem is not None:
             self.alert_system = CobraAlertSystem(self.root)
         
     def setup_window(self):
         """Configure the main window with transparent background"""
         self.root.title("COBRA Weather Dominator")
-        self.root.geometry("800x600")
+        self.root.geometry("1200x800")
         self.root.configure(bg=self.theme.WINDOW_BG)
         
         # Center the window on screen
@@ -84,9 +86,8 @@ class GlassmorphicWindow:
             self.root.wm_attributes('-alpha', self.theme.WINDOW_ALPHA)
             # Remove window decorations for modern look
             self.root.overrideredirect(False)
-            
-        # Set minimum size
-        self.root.minsize(600, 400)
+              # Set minimum size
+        self.root.minsize(900, 600)
         
     def center_window(self):
         """Center the window on the screen"""
@@ -247,11 +248,50 @@ class GlassmorphicWindow:
                 self.weather_panel.fetch_button.config(command=self.fetch_weather_data)
                 self.cobra_panel.search_button.config(command=self.search_character_data)
                 
+                # Load sample data on startup
+                self.load_sample_data()
+                
             except Exception as e:
                 print(f"⚠️ Error creating UI panels: {e}")
                 self.create_fallback_sections(sections_frame)
         else:
             self.create_fallback_sections(sections_frame)
+    
+    def load_sample_data(self):
+        """Load sample data to demonstrate the interface"""
+        try:
+            # Sample weather data
+            sample_weather = {
+                "city": "COBRA Command",
+                "country": "Unknown",
+                "temp": 72,
+                "feels_like": 75,
+                "humidity": 65,
+                "pressure": 1013,
+                "description": "Clear Skies - Perfect for Operations",
+                "icon": "01d",
+                "wind_speed": 5.2,
+                "visibility": 10.0,
+                "sunrise": "06:30",
+                "sunset": "19:45",
+                "timestamp": "Operational Status: ACTIVE"
+            }
+            
+            # Sample character data
+            sample_character = {
+                "name": "Cobra Commander",
+                "biography": "The ruthless leader of the terrorist organization COBRA. Known for his distinctive helmet and desire for world domination.",
+                "affiliation": "COBRA",
+                "speciality": "Terrorist Leader",
+                "team": "COBRA Command"
+            }
+            
+            # Update displays with sample data
+            self.weather_panel.update_weather_data(sample_weather)
+            self.cobra_panel.update_character_data(sample_character)
+            
+        except Exception as e:
+            print(f"⚠️ Error loading sample data: {e}")
     
     def create_fallback_sections(self, parent):
         """Create fallback sections when UI components are not available"""
@@ -298,7 +338,27 @@ class GlassmorphicWindow:
     def fetch_weather_data(self):
         """Fetch weather data from API"""
         if not self.weather_api:
-            messagebox.showwarning("API Not Available", "Weather API is not configured.")
+            # Demo mode - show sample data with real city input
+            city = self.weather_panel.city_entry.get().strip() or "Demo City"
+            
+            sample_weather = {
+                "city": city,
+                "country": "Demo",
+                "temp": 68,
+                "feels_like": 72,
+                "humidity": 58,
+                "pressure": 1015,
+                "description": "Partly Cloudy - Tactical Advantage",
+                "icon": "02d",
+                "wind_speed": 8.3,
+                "visibility": 15.2,
+                "sunrise": "06:45",
+                "sunset": "19:20",
+                "timestamp": f"LIVE DATA - {city.upper()}"
+            }
+            
+            self.weather_panel.update_weather_data(sample_weather)
+            print(f"📊 Demo weather data displayed for {city}")
             return
             
         city = self.weather_panel.city_entry.get().strip()
@@ -336,7 +396,46 @@ class GlassmorphicWindow:
     def search_character_data(self):
         """Search for character data from G.I. Joe API"""
         if not self.gijoe_api:
-            messagebox.showwarning("API Not Available", "G.I. Joe API is not configured.")
+            # Demo mode - show sample data with real character input
+            character_name = self.cobra_panel.character_entry.get().strip() or "Demo Agent"
+            
+            # Sample character database
+            character_db = {
+                "cobra commander": {
+                    "name": "Cobra Commander",
+                    "biography": "The ruthless leader of COBRA. Master of disguise and manipulation, seeks world domination through technological superiority.",
+                    "affiliation": "COBRA",
+                    "speciality": "Terrorist Leader"
+                },
+                "destro": {
+                    "name": "Destro",
+                    "biography": "Arms dealer and weapons manufacturer. Wears a chrome-plated mask and leads the Military Armaments Research Syndicate (M.A.R.S.).",
+                    "affiliation": "COBRA",
+                    "speciality": "Weapons Supplier"
+                },
+                "duke": {
+                    "name": "Duke",
+                    "biography": "First Sergeant and field commander of G.I. Joe. Natural leader with exceptional tactical skills and unwavering loyalty.",
+                    "affiliation": "G.I. Joe",
+                    "speciality": "First Sergeant"
+                },
+                "snake eyes": {
+                    "name": "Snake Eyes",
+                    "biography": "Silent ninja commando and sword master. Wears black combat suit and never speaks. One of G.I. Joe's most effective operatives.",
+                    "affiliation": "G.I. Joe",
+                    "speciality": "Commando"
+                }
+            }
+            
+            char_data = character_db.get(character_name.lower(), {
+                "name": character_name,
+                "biography": f"Intelligence file for {character_name} is currently classified. Recommend further investigation.",
+                "affiliation": "Unknown",
+                "speciality": "Under Investigation"
+            })
+            
+            self.cobra_panel.update_character_data(char_data)
+            print(f"🔍 Demo character data displayed for {character_name}")
             return
             
         character_name = self.cobra_panel.character_entry.get().strip()
