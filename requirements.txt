@@ -1,0 +1,17 @@
+# Weather Dominator Requirements
+# Core dependencies for COBRA Weather Dominator application
+
+# Web requests for API integration
+requests>=2.28.0
+
+# Image processing for weather icons and character images
+pillow>=9.0.0
+
+# Scientific computing for machine learning
+numpy>=1.21.0
+
+# Machine learning library
+scikit-learn>=1.1.0
+
+# Data manipulation (optional, for advanced ML features)
+pandas>=1.5.0

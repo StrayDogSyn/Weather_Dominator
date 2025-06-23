@@ -1,0 +1,19 @@
+{  "api_keys": {
+    "openweather": "cd59545154789a47d2dccb75f95f4fbf",
+    "fandom": "your_actual_fandom_api_key_here"
+  },
+  "preferences": {
+    "temperature_unit": "F",
+    "wind_unit": "mph",
+    "pressure_unit": "hPa",
+    "theme": "default"
+  },
+  "cache": {
+    "max_age_days": 7,
+    "max_size_mb": 50
+  },
+  "database": {
+    "path": "weather_dominator.db",
+    "cleanup_days": 30
+  }
+}
