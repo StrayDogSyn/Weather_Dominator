@@ -1118,6 +1118,9 @@ class SmartFeaturesPanel(GlassPanel):
         
         # Show default tab
         self.show_smart_tab(0)
+        
+        # Load initial sample data to demonstrate features
+        self.load_initial_smart_data()
     
     def show_smart_tab(self, tab_index):
         """Show the specified smart features tab"""
@@ -1634,3 +1637,172 @@ class SmartFeaturesPanel(GlassPanel):
             self.random_activity_text.delete("1.0", tk.END)
             self.random_activity_text.insert("1.0", f"Error getting random activity: {e}")
             self.random_activity_text.config(state='disabled')
+    
+    def load_initial_smart_data(self):
+        """Load initial sample data to demonstrate smart features"""
+        try:
+            # Show sample prediction data
+            self.prediction_text.config(state='normal')
+            self.prediction_text.delete("1.0", tk.END)
+            
+            sample_prediction = """🏙️ City: New York
+📅 Prediction Date: Tomorrow
+
+🌡️ Temperature: 75°F
+🤗 Feels Like: 78°F
+💧 Humidity: 65%
+🌤️ Condition: Partly Cloudy
+📊 Confidence Level: 85%
+
+✅ High confidence prediction
+
+🔍 Click '🔄 Analyze' to get real predictions for any city!"""
+            
+            self.prediction_text.insert("1.0", sample_prediction)
+            self.prediction_text.config(state='disabled')
+            
+            # Show sample accuracy data
+            self.accuracy_text.config(state='normal')
+            self.accuracy_text.delete("1.0", sample_accuracy)
+            
+            sample_accuracy = """📈 Total Predictions: 47
+✅ Accurate Predictions: 39
+🎯 Accuracy Rate: 83%
+📝 Note: Temperature accuracy within 5°F"""
+            
+            self.accuracy_text.insert("1.0", sample_accuracy)
+            self.accuracy_text.config(state='disabled')
+            
+            # Show sample trends data
+            self.trends_text.config(state='normal')
+            self.trends_text.delete("1.0", tk.END)
+            
+            sample_trends = """🏙️ City: New York
+📊 Analysis Period: Last 7 days
+📈 Data Points: 48
+
+📝 Summary: Temperature showing gradual warming trend with stable humidity levels.
+
+🌡️ Temperature Range:
+   • Current: 72°F
+   • Min: 68°F
+   • Max: 78°F
+
+🔍 Click '🔄 Analyze' to see real trend analysis!"""
+            
+            self.trends_text.insert("1.0", sample_trends)
+            self.trends_text.config(state='disabled')
+            
+            # Show sample patterns data
+            self.patterns_text.config(state='normal')
+            self.patterns_text.delete("1.0", tk.END)
+            
+            sample_patterns = """🔍 Pattern Analysis for New York
+
+📅 Weekly Temperature Patterns:
+   • Monday: 71°F
+   • Tuesday: 73°F
+   • Wednesday: 75°F
+   • Thursday: 74°F
+   • Friday: 72°F
+   • Saturday: 76°F
+   • Sunday: 70°F
+
+🔄 Weather Cycles Detected:
+   • Clear: 3 days
+   • Partly Cloudy: 2 days
+   • Cloudy: 2 days
+
+🌪️ Pressure Trend: Stable"""
+            
+            self.patterns_text.insert("1.0", sample_patterns)
+            self.patterns_text.config(state='disabled')
+            
+            # Show sample activities data
+            self.activities_text.config(state='normal')
+            self.activities_text.delete("1.0", tk.END)
+            
+            sample_activities = """🏙️ Current Weather in New York:
+🌡️ 72°F - Partly Cloudy
+💨 Wind: 8 mph
+💧 Humidity: 60%
+
+📊 Weather Suitability:
+   🟢 Outdoor Activities: Excellent
+   🟡 Water Sports: Good
+   🟢 Exercise: Excellent
+   🟢 Social Events: Excellent
+
+🌤️ Outdoor Activities:
+   • Go for a walk in Central Park
+   • Have a picnic lunch
+   • Play outdoor sports
+   • Visit outdoor markets
+
+🏠 Indoor Activities:
+   • Visit museums
+   • Go shopping
+   • Watch a movie
+   • Try a new restaurant
+
+💪 Exercise Activities:
+   • Go for a run
+   • Cycling in the park
+   • Outdoor yoga class
+   • Tennis or basketball
+
+👥 Social Activities:
+   • Meet friends for coffee
+   • Outdoor dining
+   • Group fitness class
+   • Attend outdoor events
+
+🔍 Click '🔄 Analyze' to get personalized suggestions for any city!"""
+            
+            self.activities_text.insert("1.0", sample_activities)
+            self.activities_text.config(state='disabled')
+            
+            # Show sample random activity
+            self.random_activity_text.config(state='normal')
+            self.random_activity_text.delete("1.0", tk.END)
+            
+            sample_random = """🎲 Random Suggestion:
+Perfect weather for a scenic walk! Head to a nearby park or waterfront area for some fresh air and light exercise.
+
+🎯 Alternative: Visit a local farmers market for fresh produce and local crafts.
+
+💡 Pro tip: The weather is ideal for photography - golden hour lighting expected around sunset!"""
+            
+            self.random_activity_text.insert("1.0", sample_random)
+            self.random_activity_text.config(state='disabled')
+            
+            # Add sample trend arrows
+            for widget in self.trends_arrows_frame.winfo_children():
+                widget.destroy()
+                
+            tk.Label(
+                self.trends_arrows_frame,
+                text="Overall: ↗️",
+                font=('Arial', 14, 'bold'),
+                fg=self.theme.PRIMARY_ACCENT,
+                bg=self.theme.INPUT_BG
+            ).pack(side='left', padx=10)
+            
+            tk.Label(
+                self.trends_arrows_frame,
+                text="Recent: 🌡️",
+                font=('Arial', 14, 'bold'),
+                fg=self.theme.SECONDARY_ACCENT,
+                bg=self.theme.INPUT_BG
+            ).pack(side='left', padx=10)
+            
+            tk.Label(
+                self.trends_arrows_frame,
+                text="Short-term: ➡️",
+                font=('Arial', 14, 'bold'),
+                fg=self.theme.TEXT_COLOR,
+                bg=self.theme.INPUT_BG
+            ).pack(side='left', padx=10)
+            
+        except Exception as e:
+            print(f"Error loading initial smart data: {e}")
