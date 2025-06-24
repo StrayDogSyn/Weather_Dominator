@@ -12,7 +12,7 @@ from theme_config import GlassmorphicTheme, CobraTheme
 
 # Import our custom modules
 try:
-    from ui.glass_ui import WeatherDisplayPanel, CobraIntelPanel, CobraAlertSystem, create_glass_widget, InteractiveFeaturesPanel
+    from ui.glass_ui import WeatherDisplayPanel, CobraIntelPanel, InteractiveFeaturesPanel, SmartFeaturesPanel
     from data.weather_api import WeatherAPI
     from data.gijoe_api import GIJoeAPI
     from db.sqlite_store import WeatherDatabase
@@ -25,9 +25,8 @@ except ImportError as e:
     # Set classes to None when imports fail
     WeatherDisplayPanel = None
     CobraIntelPanel = None
-    CobraAlertSystem = None
-    create_glass_widget = None
     InteractiveFeaturesPanel = None
+    SmartFeaturesPanel = None
     WeatherAPI = None
     GIJoeAPI = None
     WeatherDatabase = None
@@ -71,8 +70,7 @@ class GlassmorphicWindow:
         self.create_glassmorphic_frame()
         
         # Initialize alert system after window is created
-        if UI_AVAILABLE and CobraAlertSystem is not None:
-            self.alert_system = CobraAlertSystem(self.root)
+        self.alert_system = None  # Simple alert system can be added later if needed
         
     def setup_window(self):
         """Configure the main window with transparent background"""
@@ -240,7 +238,7 @@ class GlassmorphicWindow:
         sections_frame = tk.Frame(self.content_frame, bg=self.theme.CONTENT_BG)
         sections_frame.pack(fill='both', expand=True, pady=(10, 0))
         
-        if UI_AVAILABLE and WeatherDisplayPanel is not None and CobraIntelPanel is not None and InteractiveFeaturesPanel is not None:
+        if UI_AVAILABLE and WeatherDisplayPanel is not None and CobraIntelPanel is not None and InteractiveFeaturesPanel is not None and SmartFeaturesPanel is not None:
             try:
                 # Create tabbed interface
                 self.create_tab_interface(sections_frame)
@@ -264,7 +262,8 @@ class GlassmorphicWindow:
         tab_configs = [
             ("⛈️ WEATHER INTEL", 0, "Weather Data & Forecasting"),
             ("🐍 COBRA INTEL", 1, "Character Intelligence Database"),
-            ("🎯 INTERACTIVE", 2, "Journal, Favorites & Alerts")
+            ("🎯 INTERACTIVE", 2, "Journal, Favorites & Alerts"),
+            ("🧠 SMART AI", 3, "Predictions, Trends & Activities")
         ]
         
         for text, index, tooltip in tab_configs:
@@ -295,6 +294,8 @@ class GlassmorphicWindow:
             self.cobra_panel = CobraIntelPanel(self.panels_container, self.theme)
         if InteractiveFeaturesPanel is not None:
             self.interactive_panel = InteractiveFeaturesPanel(self.panels_container, self.theme)
+        if SmartFeaturesPanel is not None:
+            self.smart_panel = SmartFeaturesPanel(self.panels_container, self.theme)
         
         # Connect button events
         if hasattr(self, 'weather_panel'):
@@ -324,6 +325,8 @@ class GlassmorphicWindow:
             self.cobra_panel.pack_forget()
         if hasattr(self, 'interactive_panel'):
             self.interactive_panel.pack_forget()
+        if hasattr(self, 'smart_panel'):
+            self.smart_panel.pack_forget()
         
         # Show selected panel
         if tab_index == 0 and hasattr(self, 'weather_panel'):
@@ -332,6 +335,8 @@ class GlassmorphicWindow:
             self.cobra_panel.pack(fill='both', expand=True, padx=5, pady=5)
         elif tab_index == 2 and hasattr(self, 'interactive_panel'):
             self.interactive_panel.pack(fill='both', expand=True, padx=5, pady=5)
+        elif tab_index == 3 and hasattr(self, 'smart_panel'):
+            self.smart_panel.pack(fill='both', expand=True, padx=5, pady=5)
         
         self.current_tab = tab_index
     

@@ -1000,136 +1000,637 @@ class InteractiveFeaturesPanel(GlassPanel):
             self.alerts_display.insert("1.0", f"Error loading alerts: {e}")
             self.alerts_display.config(state='disabled')
 
-class CobraAlertSystem:
-    """Glassmorphic alert system for COBRA-style notifications"""
+class SmartFeaturesPanel(GlassPanel):
+    """Glassmorphic panel for Smart Features (Predictions, Trends, Activity Suggestions)"""
     
-    def __init__(self, parent):
-        self.parent = parent
-        self.alerts = []
+    def __init__(self, parent, theme):
+        super().__init__(parent, theme, "🧠 SMART WEATHER AI")
+        
+        # Import Smart Features
+        try:
+            from ..ml.smart_features import SmartWeatherFeatures
+            self.smart_features = SmartWeatherFeatures()
+        except ImportError:
+            try:
+                import sys
+                import os
+                sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+                from ml.smart_features import SmartWeatherFeatures
+                self.smart_features = SmartWeatherFeatures()
+            except ImportError:
+                self.smart_features = None
+        
+        # Current city for smart features
+        self.current_city = "New York"
+        
+        self.create_smart_features_interface()
     
-    def trigger_alert(self, message: str, alert_type: str = "warning"):
-        """Display a COBRA-style alert"""
-        alert_window = tk.Toplevel(self.parent)
-        alert_window.title("COBRA ALERT")
-        alert_window.geometry("400x200")
-        alert_window.configure(bg="#1a1a1a")
-        alert_window.transient(self.parent)
-        alert_window.grab_set()
-        
-        # Center the alert
-        alert_window.update_idletasks()
-        x = (alert_window.winfo_screenwidth() // 2) - (400 // 2)
-        y = (alert_window.winfo_screenheight() // 2) - (200 // 2)
-        alert_window.geometry(f"400x200+{x}+{y}")
-        
-        # Alert content
-        main_frame = tk.Frame(alert_window, bg="#dc143c", relief='raised', bd=2)
-        main_frame.pack(fill='both', expand=True, padx=5, pady=5)
-        
-        # Alert header
-        header_frame = tk.Frame(main_frame, bg="#dc143c")
-        header_frame.pack(fill='x', pady=10)
+    def create_smart_features_interface(self):
+        """Create the complete smart features interface with tabs"""
+        # City input section
+        input_frame = tk.Frame(self, bg=self.theme.GLASS_BG)
+        input_frame.pack(fill='x', padx=15, pady=10)
         
         tk.Label(
-            header_frame,
-            text="⚠️ COBRA ALERT ⚠️",
-            font=('Arial', 14, 'bold'),
-            fg='white',
-            bg="#dc143c"
-        ).pack()
+            input_frame,
+            text="AI Analysis City:",
+            font=self.theme.LABEL_FONT,
+            fg=self.theme.TEXT_COLOR,
+            bg=self.theme.GLASS_BG
+        ).pack(side='left')
         
-        # Alert message
-        message_frame = tk.Frame(main_frame, bg="white")
-        message_frame.pack(fill='both', expand=True, padx=10, pady=(0, 10))
+        self.city_entry = tk.Entry(
+            input_frame,
+            font=self.theme.INPUT_FONT,
+            bg=self.theme.INPUT_BG,
+            fg=self.theme.TEXT_COLOR,
+            relief='flat',
+            bd=5,
+            width=20
+        )
+        self.city_entry.pack(side='left', padx=(10, 5))
+        self.city_entry.insert(0, self.current_city)
+        
+        # Update button
+        self.update_button = tk.Button(
+            input_frame,
+            text="🔄 Analyze",
+            font=self.theme.BUTTON_FONT,
+            bg=self.theme.PRIMARY_ACCENT,
+            fg='white',
+            activebackground=self.theme.SECONDARY_ACCENT,
+            relief='flat',
+            bd=0,
+            padx=15,
+            pady=8,
+            command=self.update_smart_analysis
+        )
+        self.update_button.pack(side='left', padx=5)
+        
+        # Create tabbed interface for smart features
+        self.create_smart_tabs()
+    
+    def create_smart_tabs(self):
+        """Create tabbed interface for smart features"""
+        # Tab container
+        tab_container = tk.Frame(self, bg=self.theme.GLASS_BG)
+        tab_container.pack(fill='both', expand=True, padx=10, pady=10)
+        
+        # Tab buttons frame
+        tab_buttons_frame = tk.Frame(tab_container, bg=self.theme.GLASS_BG)
+        tab_buttons_frame.pack(fill='x', pady=(0, 10))
+        
+        # Tab buttons
+        self.smart_tab_buttons = []
+        self.current_smart_tab = 0
+        
+        smart_tabs = [
+            ("🔮 Tomorrow's Guess", 0),
+            ("📈 Trend Detection", 1),
+            ("🎯 Activity Suggester", 2)
+        ]
+        
+        for text, index in smart_tabs:
+            btn = tk.Button(
+                tab_buttons_frame,
+                text=text,
+                font=self.theme.BUTTON_FONT,
+                bg=self.theme.INPUT_BG,
+                fg=self.theme.TEXT_COLOR,
+                activebackground=self.theme.PRIMARY_ACCENT,
+                activeforeground='white',
+                relief='flat',
+                bd=0,
+                pady=8,
+                command=lambda i=index: self.show_smart_tab(i)
+            )
+            btn.pack(side='left', fill='x', expand=True, padx=2)
+            self.smart_tab_buttons.append(btn)
+        
+        # Content frame for tab panels
+        self.smart_content_frame = tk.Frame(tab_container, bg=self.theme.GLASS_BG)
+        self.smart_content_frame.pack(fill='both', expand=True)
+        
+        # Create tab panels
+        self.create_prediction_tab()
+        self.create_trends_tab()
+        self.create_activity_tab()
+        
+        # Show default tab
+        self.show_smart_tab(0)
+    
+    def show_smart_tab(self, tab_index):
+        """Show the specified smart features tab"""
+        # Update button appearances
+        for i, btn in enumerate(self.smart_tab_buttons):
+            if i == tab_index:
+                btn.config(bg=self.theme.PRIMARY_ACCENT, fg='white')
+            else:
+                btn.config(bg=self.theme.INPUT_BG, fg=self.theme.TEXT_COLOR)
+        
+        # Hide all tab frames
+        for widget in self.smart_content_frame.winfo_children():
+            widget.pack_forget()
+        
+        # Show selected tab
+        if tab_index == 0:
+            self.prediction_frame.pack(fill='both', expand=True)
+        elif tab_index == 1:
+            self.trends_frame.pack(fill='both', expand=True)
+        elif tab_index == 2:
+            self.activity_frame.pack(fill='both', expand=True)
+        
+        self.current_smart_tab = tab_index
+    
+    def create_prediction_tab(self):
+        """Create Tomorrow's Guess prediction tab"""
+        self.prediction_frame = tk.Frame(self.smart_content_frame, bg=self.theme.GLASS_BG)
+        
+        # Prediction display
+        pred_display_frame = tk.Frame(self.prediction_frame, bg=self.theme.GLASS_BG)
+        pred_display_frame.pack(fill='both', expand=True, padx=10, pady=10)
+        
+        # Tomorrow's prediction section
+        tomorrow_frame = tk.Frame(pred_display_frame, bg=self.theme.INPUT_BG, relief='raised', bd=1)
+        tomorrow_frame.pack(fill='x', pady=(0, 10))
         
         tk.Label(
-            message_frame,
-            text=message,
-            font=('Arial', 10),
-            fg="#dc143c",
-            bg="white",
-            wraplength=350,
-            justify='center'
-        ).pack(expand=True)
+            tomorrow_frame,
+            text="🔮 TOMORROW'S WEATHER PREDICTION",
+            font=self.theme.SECTION_FONT,
+            fg=self.theme.PRIMARY_ACCENT,
+            bg=self.theme.INPUT_BG
+        ).pack(pady=10)
         
-        # Close button
-        close_button = tk.Button(
-            main_frame,
-            text="ACKNOWLEDGE",
-            font=('Arial', 10, 'bold'),
-            bg="white",
-            fg="#dc143c",
-            command=alert_window.destroy,
+        # Prediction content
+        self.prediction_content = tk.Frame(tomorrow_frame, bg=self.theme.INPUT_BG)
+        self.prediction_content.pack(fill='x', padx=20, pady=10)
+        
+        # Prediction text
+        self.prediction_text = tk.Text(
+            self.prediction_content,
+            height=8,
+            font=self.theme.BODY_FONT,
+            bg=self.theme.CONTENT_BG,
+            fg=self.theme.TEXT_COLOR,
             relief='flat',
-            bd=0,
-            pady=5
+            bd=5,
+            wrap='word',
+            state='disabled'
         )
-        close_button.pack(pady=(0, 10))
+        self.prediction_text.pack(fill='x', pady=5)
         
-        # Auto-close after 5 seconds
-        alert_window.after(5000, alert_window.destroy)
-
-def create_glass_widget(parent, widget_type: str, theme, **kwargs):
-    """
-    Factory function for creating glassmorphic widgets
+        # Accuracy tracking section
+        accuracy_frame = tk.Frame(pred_display_frame, bg=self.theme.INPUT_BG, relief='raised', bd=1)
+        accuracy_frame.pack(fill='x', pady=(0, 10))
+        
+        tk.Label(
+            accuracy_frame,
+            text="📊 PREDICTION ACCURACY TRACKING",
+            font=self.theme.SECTION_FONT,
+            fg=self.theme.SECONDARY_ACCENT,
+            bg=self.theme.INPUT_BG
+        ).pack(pady=10)
+        
+        self.accuracy_text = tk.Text(
+            accuracy_frame,
+            height=4,
+            font=self.theme.BODY_FONT,
+            bg=self.theme.CONTENT_BG,
+            fg=self.theme.TEXT_COLOR,
+            relief='flat',
+            bd=5,
+            wrap='word',
+            state='disabled'
+        )
+        self.accuracy_text.pack(fill='x', padx=20, pady=10)
     
-    Args:
-        parent: Parent widget
-        widget_type: Type of widget ("button", "label", "entry", "frame")
-        theme: Theme configuration
-        **kwargs: Additional widget options
-    """
-    if widget_type == "button":
-        return tk.Button(
-            parent,
-            bg=theme.PRIMARY_ACCENT,
+    def create_trends_tab(self):
+        """Create Trend Detection tab"""
+        self.trends_frame = tk.Frame(self.smart_content_frame, bg=self.theme.GLASS_BG)
+        
+        # Trends display
+        trends_display_frame = tk.Frame(self.trends_frame, bg=self.theme.GLASS_BG)
+        trends_display_frame.pack(fill='both', expand=True, padx=10, pady=10)
+        
+        # Temperature trends section
+        temp_trends_frame = tk.Frame(trends_display_frame, bg=self.theme.INPUT_BG, relief='raised', bd=1)
+        temp_trends_frame.pack(fill='x', pady=(0, 10))
+        
+        tk.Label(
+            temp_trends_frame,
+            text="📈 TEMPERATURE TREND ANALYSIS",
+            font=self.theme.SECTION_FONT,
+            fg=self.theme.PRIMARY_ACCENT,
+            bg=self.theme.INPUT_BG
+        ).pack(pady=10)
+        
+        # Trend arrows display
+        self.trends_arrows_frame = tk.Frame(temp_trends_frame, bg=self.theme.INPUT_BG)
+        self.trends_arrows_frame.pack(fill='x', padx=20, pady=10)
+        
+        # Trend summary
+        self.trends_text = tk.Text(
+            temp_trends_frame,
+            height=6,
+            font=self.theme.BODY_FONT,
+            bg=self.theme.CONTENT_BG,
+            fg=self.theme.TEXT_COLOR,
+            relief='flat',
+            bd=5,
+            wrap='word',
+            state='disabled'
+        )
+        self.trends_text.pack(fill='x', padx=20, pady=10)
+        
+        # Weather patterns section
+        patterns_frame = tk.Frame(trends_display_frame, bg=self.theme.INPUT_BG, relief='raised', bd=1)
+        patterns_frame.pack(fill='x')
+        
+        tk.Label(
+            patterns_frame,
+            text="🔍 WEATHER PATTERN IDENTIFICATION",
+            font=self.theme.SECTION_FONT,
+            fg=self.theme.SECONDARY_ACCENT,
+            bg=self.theme.INPUT_BG
+        ).pack(pady=10)
+        
+        self.patterns_text = tk.Text(
+            patterns_frame,
+            height=6,
+            font=self.theme.BODY_FONT,
+            bg=self.theme.CONTENT_BG,
+            fg=self.theme.TEXT_COLOR,
+            relief='flat',
+            bd=5,
+            wrap='word',
+            state='disabled'
+        )
+        self.patterns_text.pack(fill='x', padx=20, pady=10)
+    
+    def create_activity_tab(self):
+        """Create Activity Suggester tab"""
+        self.activity_frame = tk.Frame(self.smart_content_frame, bg=self.theme.GLASS_BG)
+        
+        # Activity display
+        activity_display_frame = tk.Frame(self.activity_frame, bg=self.theme.GLASS_BG)
+        activity_display_frame.pack(fill='both', expand=True, padx=10, pady=10)
+        
+        # Random suggestion section
+        random_frame = tk.Frame(activity_display_frame, bg=self.theme.INPUT_BG, relief='raised', bd=1)
+        random_frame.pack(fill='x', pady=(0, 10))
+        
+        random_header = tk.Frame(random_frame, bg=self.theme.INPUT_BG)
+        random_header.pack(fill='x', pady=10)
+        
+        tk.Label(
+            random_header,
+            text="🎲 RANDOM ACTIVITY SUGGESTION",
+            font=self.theme.SECTION_FONT,
+            fg=self.theme.PRIMARY_ACCENT,
+            bg=self.theme.INPUT_BG
+        ).pack(side='left', padx=20)
+        
+        self.random_activity_button = tk.Button(
+            random_header,
+            text="🔄 Get New Suggestion",
+            font=self.theme.BUTTON_FONT,
+            bg=self.theme.SECONDARY_ACCENT,
             fg='white',
-            activebackground=theme.SECONDARY_ACCENT,
+            activebackground=self.theme.PRIMARY_ACCENT,
             relief='flat',
             bd=0,
-            font=theme.BUTTON_FONT,
-            **kwargs
+            padx=10,
+            pady=5,
+            command=self.get_random_activity
         )
-    elif widget_type == "label":
-        return tk.Label(
-            parent,
-            bg=theme.GLASS_BG,
-            fg=theme.TEXT_COLOR,
-            font=theme.BODY_FONT,
-            **kwargs
-        )
-    elif widget_type == "entry":
-        return tk.Entry(
-            parent,
-            bg=theme.INPUT_BG,
-            fg=theme.TEXT_COLOR,
-            insertbackground=theme.TEXT_COLOR,
+        self.random_activity_button.pack(side='right', padx=20)
+        
+        self.random_activity_text = tk.Text(
+            random_frame,
+            height=3,
+            font=self.theme.BODY_FONT,
+            bg=self.theme.CONTENT_BG,
+            fg=self.theme.TEXT_COLOR,
             relief='flat',
-            bd=0,
-            font=theme.BODY_FONT,
-            **kwargs
+            bd=5,
+            wrap='word',
+            state='disabled'
         )
-    elif widget_type == "frame":
-        return tk.Frame(
-            parent,
-            bg=theme.GLASS_BG,
-            relief='raised',
-            bd=1,
-            highlightbackground=theme.BORDER,
-            highlightcolor=theme.BORDER,
-            highlightthickness=1,
-            **kwargs
+        self.random_activity_text.pack(fill='x', padx=20, pady=10)
+        
+        # Categorized activities section
+        categories_frame = tk.Frame(activity_display_frame, bg=self.theme.INPUT_BG, relief='raised', bd=1)
+        categories_frame.pack(fill='both', expand=True)
+        
+        tk.Label(
+            categories_frame,
+            text="🎯 WEATHER-BASED ACTIVITY RECOMMENDATIONS",
+            font=self.theme.SECTION_FONT,
+            fg=self.theme.SECONDARY_ACCENT,
+            bg=self.theme.INPUT_BG
+        ).pack(pady=10)
+        
+        # Create scrollable text for all activities
+        self.activities_text = tk.Text(
+            categories_frame,
+            height=12,
+            font=self.theme.BODY_FONT,
+            bg=self.theme.CONTENT_BG,
+            fg=self.theme.TEXT_COLOR,
+            relief='flat',
+            bd=5,
+            wrap='word',
+            state='disabled'
         )
-    else:
-        raise ValueError(f"Unknown widget type: {widget_type}")
-
-# TODO: Add more glassmorphic components:
-# - Animated progress bars for weather loading
-# - Tabbed panels for extended forecasts
-# - Map integration widget
-# - Voice command input widget
-# - Settings panel with glassmorphic styling
-
-# COPILOT/CLAUDE PROMPT: "Create animated weather transition effects between different weather conditions in the WeatherDisplayPanel"
-# COPILOT/CLAUDE PROMPT: "Add drag-and-drop functionality to rearrange weather data panels"
-# COPILOT/CLAUDE PROMPT: "Implement glassmorphic tooltips for all interactive elements"
+        self.activities_text.pack(fill='both', expand=True, padx=20, pady=10)
+    
+    def update_smart_analysis(self):
+        """Update all smart feature analyses for the specified city"""
+        city = self.city_entry.get().strip()
+        if not city:
+            messagebox.showwarning("Input Required", "Please enter a city name for AI analysis.")
+            return
+        
+        self.current_city = city
+        
+        if not self.smart_features:
+            messagebox.showerror("Error", "Smart Features not available. Please check module installation.")
+            return
+        
+        try:
+            # Update all tabs
+            self.update_predictions()
+            self.update_trends()
+            self.update_activities()
+            
+            messagebox.showinfo("Analysis Complete", f"Smart analysis updated for {city}!")
+            
+        except Exception as e:
+            messagebox.showerror("Analysis Error", f"Error during smart analysis: {str(e)}")
+    
+    def update_predictions(self):
+        """Update tomorrow's weather prediction"""
+        if not self.smart_features:
+            return
+        
+        try:
+            prediction = self.smart_features.predict_tomorrows_weather(self.current_city)
+            accuracy = self.smart_features.track_prediction_accuracy(self.current_city)
+            
+            # Update prediction display
+            self.prediction_text.config(state='normal')
+            self.prediction_text.delete("1.0", tk.END)
+            
+            if "error" in prediction:
+                self.prediction_text.insert("1.0", f"❌ {prediction['error']}\n\nTip: More historical data needed for accurate predictions.")
+            else:
+                pred_data = prediction.get('prediction', {})
+                confidence = prediction.get('confidence', 0)
+                
+                content = f"🏙️ City: {self.current_city}\n"
+                content += f"📅 Prediction Date: {prediction.get('prediction_date', 'Unknown')}\n\n"
+                content += f"🌡️ Temperature: {pred_data.get('temperature', 'N/A')}°F\n"
+                content += f"🤗 Feels Like: {pred_data.get('feels_like', 'N/A')}°F\n"
+                content += f"💧 Humidity: {pred_data.get('humidity', 'N/A')}%\n"
+                content += f"🌤️ Condition: {pred_data.get('condition', 'Unknown')}\n"
+                content += f"📊 Confidence Level: {confidence}%\n\n"
+                
+                if confidence >= 80:
+                    content += "✅ High confidence prediction"
+                elif confidence >= 60:
+                    content += "⚠️ Moderate confidence prediction"
+                else:
+                    content += "🔍 Low confidence - more data needed"
+                
+                self.prediction_text.insert("1.0", content)
+            
+            self.prediction_text.config(state='disabled')
+            
+            # Update accuracy display
+            self.accuracy_text.config(state='normal')
+            self.accuracy_text.delete("1.0", tk.END)
+            
+            if "error" in accuracy:
+                self.accuracy_text.insert("1.0", f"📊 {accuracy['error']}")
+            else:
+                acc_content = f"📈 Total Predictions: {accuracy.get('total_predictions', 0)}\n"
+                acc_content += f"✅ Accurate Predictions: {accuracy.get('accurate_predictions', 0)}\n"
+                acc_content += f"🎯 Accuracy Rate: {accuracy.get('accuracy_percentage', 0)}%\n"
+                acc_content += f"📝 Note: {accuracy.get('note', 'Temperature accuracy within 5°F')}"
+                
+                self.accuracy_text.insert("1.0", acc_content)
+            
+            self.accuracy_text.config(state='disabled')
+            
+        except Exception as e:
+            self.prediction_text.config(state='normal')
+            self.prediction_text.delete("1.0", tk.END)
+            self.prediction_text.insert("1.0", f"Error loading predictions: {e}")
+            self.prediction_text.config(state='disabled')
+    
+    def update_trends(self):
+        """Update temperature trends and patterns"""
+        if not self.smart_features:
+            return
+        
+        try:
+            trends = self.smart_features.detect_temperature_trends(self.current_city)
+            patterns = self.smart_features.identify_weather_patterns(self.current_city)
+            
+            # Clear previous trend arrows
+            for widget in self.trends_arrows_frame.winfo_children():
+                widget.destroy()
+            
+            # Update trends display
+            self.trends_text.config(state='normal')
+            self.trends_text.delete("1.0", tk.END)
+            
+            if "error" in trends:
+                self.trends_text.insert("1.0", f"❌ {trends['error']}\n\nTip: Need more historical data for trend analysis.")
+            else:
+                # Display trend arrows
+                arrows = trends.get('trend_arrows', {})
+                if arrows:
+                    tk.Label(
+                        self.trends_arrows_frame,
+                        text=f"Overall: {arrows.get('overall', '➡️')}",
+                        font=('Arial', 14, 'bold'),
+                        fg=self.theme.PRIMARY_ACCENT,
+                        bg=self.theme.INPUT_BG
+                    ).pack(side='left', padx=10)
+                    
+                    tk.Label(
+                        self.trends_arrows_frame,
+                        text=f"Recent: {arrows.get('recent', '🌡️')}",
+                        font=('Arial', 14, 'bold'),
+                        fg=self.theme.SECONDARY_ACCENT,
+                        bg=self.theme.INPUT_BG
+                    ).pack(side='left', padx=10)
+                    
+                    tk.Label(
+                        self.trends_arrows_frame,
+                        text=f"Short-term: {arrows.get('short_term', '➡️')}",
+                        font=('Arial', 14, 'bold'),
+                        fg=self.theme.TEXT_COLOR,
+                        bg=self.theme.INPUT_BG
+                    ).pack(side='left', padx=10)
+                
+                # Display trend summary
+                summary = trends.get('summary', 'No trend analysis available')
+                trend_data = trends.get('trends', {})
+                
+                content = f"🏙️ City: {self.current_city}\n"
+                content += f"📊 Analysis Period: {trends.get('analysis_period', 'Unknown')}\n"
+                content += f"📈 Data Points: {trends.get('data_points', 0)}\n\n"
+                content += f"📝 Summary: {summary}\n\n"
+                
+                if trend_data and "error" not in trend_data:
+                    temp_range = trend_data.get('temperature_range', {})
+                    content += f"🌡️ Temperature Range:\n"
+                    content += f"   • Current: {temp_range.get('current', 'N/A')}°F\n"
+                    content += f"   • Min: {temp_range.get('min', 'N/A')}°F\n"
+                    content += f"   • Max: {temp_range.get('max', 'N/A')}°F\n"
+                
+                self.trends_text.insert("1.0", content)
+            
+            self.trends_text.config(state='disabled')
+            
+            # Update patterns display
+            self.patterns_text.config(state='normal')
+            self.patterns_text.delete("1.0", tk.END)
+            
+            if "error" in patterns:
+                self.patterns_text.insert("1.0", f"❌ {patterns['error']}")
+            else:
+                patterns_data = patterns.get('patterns', {})
+                content = f"🔍 Pattern Analysis for {self.current_city}\n\n"
+                
+                # Weekly patterns
+                weekly = patterns_data.get('weekly_patterns', {})
+                if weekly and "error" not in weekly:
+                    daily_avg = weekly.get('daily_averages', {})
+                    if daily_avg:
+                        content += "📅 Weekly Temperature Patterns:\n"
+                        for day, temp in daily_avg.items():
+                            content += f"   • {day}: {temp}°F\n"
+                        content += "\n"
+                
+                # Weather cycles
+                cycles = patterns_data.get('weather_cycles', {})
+                if cycles and "error" not in cycles:
+                    weather_cycles = cycles.get('weather_cycles', [])
+                    if weather_cycles:
+                        content += "🔄 Weather Cycles Detected:\n"
+                        for cycle in weather_cycles[:3]:  # Show top 3
+                            content += f"   • {cycle.get('condition', 'Unknown')}: {cycle.get('duration', 0)} days\n"
+                        content += "\n"
+                
+                # Pressure patterns
+                pressure = patterns_data.get('pressure_patterns', {})
+                if pressure and "error" not in pressure:
+                    trend = pressure.get('pressure_trend', 'unknown')
+                    content += f"🌪️ Pressure Trend: {trend.replace('_', ' ').title()}\n"
+                
+                self.patterns_text.insert("1.0", content)
+            
+            self.patterns_text.config(state='disabled')
+            
+        except Exception as e:
+            self.trends_text.config(state='normal')
+            self.trends_text.delete("1.0", tk.END)
+            self.trends_text.insert("1.0", f"Error loading trends: {e}")
+            self.trends_text.config(state='disabled')
+    
+    def update_activities(self):
+        """Update activity suggestions"""
+        if not self.smart_features:
+            return
+        
+        try:
+            activities = self.smart_features.suggest_weather_based_activities(self.current_city)
+            
+            # Update activities display
+            self.activities_text.config(state='normal')
+            self.activities_text.delete("1.0", tk.END)
+            
+            if "error" in activities:
+                self.activities_text.insert("1.0", f"❌ {activities['error']}")
+            else:
+                current_weather = activities.get('current_weather', {})
+                suggestions = activities.get('activity_suggestions', {})
+                suitability = activities.get('weather_suitability', {})
+                
+                content = f"🏙️ Current Weather in {self.current_city}:\n"
+                content += f"🌡️ {current_weather.get('temperature', 'N/A')}°F - {current_weather.get('condition', 'Unknown')}\n"
+                content += f"💨 Wind: {current_weather.get('wind_speed', 'N/A')} mph\n"
+                content += f"💧 Humidity: {current_weather.get('humidity', 'N/A')}%\n\n"
+                
+                # Weather suitability
+                content += "📊 Weather Suitability:\n"
+                for activity_type, rating in suitability.items():
+                    emoji = {"excellent": "🟢", "good": "🟡", "fair": "🟠", "poor": "🔴"}.get(rating, "⚪")
+                    content += f"   {emoji} {activity_type.replace('_', ' ').title()}: {rating.title()}\n"
+                content += "\n"
+                
+                # Activity suggestions by category
+                for category, activity_list in suggestions.items():
+                    if activity_list:
+                        category_emoji = {
+                            "outdoor": "🌤️",
+                            "indoor": "🏠",
+                            "exercise": "💪",
+                            "social": "👥"
+                        }.get(category, "🎯")
+                        
+                        content += f"{category_emoji} {category.title()} Activities:\n"
+                        for activity in activity_list:
+                            content += f"   • {activity}\n"
+                        content += "\n"
+                
+                self.activities_text.insert("1.0", content)
+            
+            self.activities_text.config(state='disabled')
+            
+            # Also update random suggestion
+            self.get_random_activity()
+            
+        except Exception as e:
+            self.activities_text.config(state='normal')
+            self.activities_text.delete("1.0", tk.END)
+            self.activities_text.insert("1.0", f"Error loading activities: {e}")
+            self.activities_text.config(state='disabled')
+    
+    def get_random_activity(self):
+        """Get a random activity suggestion"""
+        if not self.smart_features:
+            return
+        
+        try:
+            random_suggestion = self.smart_features.get_random_activity_suggestion(self.current_city)
+            
+            self.random_activity_text.config(state='normal')
+            self.random_activity_text.delete("1.0", tk.END)
+            
+            if "error" in random_suggestion:
+                self.random_activity_text.insert("1.0", f"❌ {random_suggestion['error']}")
+            else:
+                weather = random_suggestion.get('weather', {})
+                suggestion = random_suggestion.get('random_suggestion', 'No suggestion available')
+                alternative = random_suggestion.get('alternative_suggestion', '')
+                tip = random_suggestion.get('tip', '')
+                
+                content = f"🎲 Random Suggestion:\n{suggestion}\n\n"
+                if alternative:
+                    content += f"🎯 Alternative: {alternative}\n\n"
+                content += f"💡 {tip}"
+                
+                self.random_activity_text.insert("1.0", content)
+            
+            self.random_activity_text.config(state='disabled')
+            
+        except Exception as e:
+            self.random_activity_text.config(state='normal')
+            self.random_activity_text.delete("1.0", tk.END)
+            self.random_activity_text.insert("1.0", f"Error getting random activity: {e}")
+            self.random_activity_text.config(state='disabled')
