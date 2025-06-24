@@ -671,34 +671,143 @@ class GIJoeDBPopulator:
         self._insert_data('gijoe_weapons', weapons, "weapons")
     
     def populate_locations(self):
-        """Populate locations table with sample data"""
+        """Populate locations table with comprehensive G.I. Joe locations data"""
         locations = [
+            # G.I. Joe Bases
             {
                 'name': 'The Pit',
-                'type': 'Base',
+                'type': 'Underground Base',
                 'faction': 'G.I. Joe',
-                'description': 'Underground headquarters of G.I. Joe.',
-                'location': 'Utah, USA',
-                'purpose': 'Command center and training facility',
+                'description': 'Underground headquarters of G.I. Joe located in the Utah desert. Multi-level facility with training areas, vehicle bays, and command centers.',
+                'location': 'Utah Desert, USA',
+                'purpose': 'Primary command center, training facility, and vehicle storage',
+                'notable_features': 'Underground hangar, training simulator, medical bay, communications center',
+                'first_appearance': '1983',
                 'wiki_url': 'https://gijoe.fandom.com/wiki/The_Pit'
             },
             {
+                'name': 'USS Flagg',
+                'type': 'Mobile Naval Base',
+                'faction': 'G.I. Joe',
+                'description': 'Massive aircraft carrier serving as G.I. Joe\'s mobile command center and primary naval base.',
+                'location': 'International Waters',
+                'purpose': 'Naval operations base, mobile command center, aircraft carrier',
+                'notable_features': 'Flight deck, command bridge, hangar bay, crew quarters for 1000+',
+                'first_appearance': '1985',
+                'wiki_url': 'https://gijoe.fandom.com/wiki/USS_Flagg'
+            },
+            {
+                'name': 'Headquarters Command Center',
+                'type': 'Command Facility',
+                'faction': 'G.I. Joe',
+                'description': 'Above-ground command facility that serves as the administrative center for G.I. Joe operations.',
+                'location': 'Classified Location, USA',
+                'purpose': 'Administrative headquarters, mission planning, intelligence analysis',
+                'notable_features': 'War room, communications array, briefing rooms',
+                'first_appearance': '1982',
+                'wiki_url': 'https://gijoe.fandom.com/wiki/GI_Joe_Headquarters'
+            },
+            # Cobra Facilities
+            {
                 'name': 'Cobra Island',
-                'type': 'Island Base',
+                'type': 'Island Nation',
                 'faction': 'Cobra',
-                'description': 'Sovereign nation controlled by Cobra.',
+                'description': 'Sovereign island nation controlled by Cobra, serving as their primary headquarters and stronghold.',
                 'location': 'Gulf of Mexico',
-                'purpose': 'Cobra\'s primary headquarters',
+                'purpose': 'Cobra headquarters, weapons manufacturing, training facilities',
+                'notable_features': 'Terrordrome, airfields, harbor facilities, industrial complexes',
+                'first_appearance': '1986',
                 'wiki_url': 'https://gijoe.fandom.com/wiki/Cobra_Island'
             },
             {
-                'name': 'USS Flagg',
-                'type': 'Mobile Base',
-                'faction': 'G.I. Joe',
-                'description': 'Aircraft carrier serving as mobile command.',
-                'location': 'International waters',
-                'purpose': 'Naval operations base',
-                'wiki_url': 'https://gijoe.fandom.com/wiki/USS_Flagg'
+                'name': 'Cobra Temple',
+                'type': 'Ancient Temple Complex',
+                'faction': 'Cobra',
+                'description': 'Ancient temple complex used by Cobra as a secret base and ceremonial site.',
+                'location': 'Various jungle locations',
+                'purpose': 'Secret base, ceremonial site, weapons storage',
+                'notable_features': 'Hidden passages, ancient architecture, defensive systems',
+                'first_appearance': '1984',
+                'wiki_url': 'https://gijoe.fandom.com/wiki/Cobra_Temple'
+            },
+            {
+                'name': 'Extensive Enterprises',
+                'type': 'Corporate Headquarters',
+                'faction': 'Cobra',
+                'description': 'Cobra Commander\'s legitimate business front and secret operational base.',
+                'location': 'Springfield, USA',
+                'purpose': 'Corporate front, money laundering, recruitment center',
+                'notable_features': 'Executive offices, hidden laboratories, underground facilities',
+                'first_appearance': '1985',
+                'wiki_url': 'https://gijoe.fandom.com/wiki/Extensive_Enterprises'
+            },
+            # M.A.R.S. Facilities
+            {
+                'name': 'Castle Destro',
+                'type': 'Ancestral Castle',
+                'faction': 'M.A.R.S./Cobra',
+                'description': 'Destro\'s ancestral castle in Scotland, serving as M.A.R.S. Industries headquarters.',
+                'location': 'Scottish Highlands',
+                'purpose': 'M.A.R.S. headquarters, weapons development, Destro\'s residence',
+                'notable_features': 'Ancient architecture, modern laboratories, weapons testing facilities',
+                'first_appearance': '1983',
+                'wiki_url': 'https://gijoe.fandom.com/wiki/Castle_Destro'
+            },
+            {
+                'name': 'M.A.R.S. Industries',
+                'type': 'Weapons Manufacturing',
+                'faction': 'M.A.R.S./Cobra',
+                'description': 'Global weapons manufacturing corporation owned by Destro\'s family.',
+                'location': 'Multiple international locations',
+                'purpose': 'Weapons research, development, and manufacturing',
+                'notable_features': 'Advanced laboratories, testing ranges, manufacturing plants',
+                'first_appearance': '1983',
+                'wiki_url': 'https://gijoe.fandom.com/wiki/MARS_Industries'
+            },
+            # Other Notable Locations
+            {
+                'name': 'Arashikage Dojo',
+                'type': 'Training Facility',
+                'faction': 'Independent',
+                'description': 'Traditional ninja training facility where Snake Eyes and Storm Shadow learned their skills.',
+                'location': 'Japan',
+                'purpose': 'Martial arts training, ninja education, spiritual development',
+                'notable_features': 'Traditional architecture, training grounds, meditation gardens',
+                'first_appearance': '1984',
+                'wiki_url': 'https://gijoe.fandom.com/wiki/Arashikage_Dojo'
+            },
+            {
+                'name': 'Silent Castle',
+                'type': 'Secret Facility',
+                'faction': 'Cobra',
+                'description': 'Cobra\'s secret mountain fortress used for special operations and prisoner detention.',
+                'location': 'Trans-Carpathian Mountains',
+                'purpose': 'Secret operations base, prisoner facility, weapons storage',
+                'notable_features': 'Mountain fortification, dungeons, hidden entrances',
+                'first_appearance': '1985',
+                'wiki_url': 'https://gijoe.fandom.com/wiki/Silent_Castle'
+            },
+            {
+                'name': 'Benzheen',
+                'type': 'Oil-Rich Nation',
+                'faction': 'Independent',
+                'description': 'Oil-rich Middle Eastern nation often caught between G.I. Joe and Cobra conflicts.',
+                'location': 'Middle East',
+                'purpose': 'Oil production, strategic location, frequent battleground',
+                'notable_features': 'Oil fields, royal palace, strategic importance',
+                'first_appearance': '1985',
+                'wiki_url': 'https://gijoe.fandom.com/wiki/Benzheen'
+            },
+            {
+                'name': 'Millville',
+                'type': 'Small Town',
+                'faction': 'Cobra-controlled',
+                'description': 'Small American town secretly controlled by Cobra as a recruitment and indoctrination center.',
+                'location': 'USA (various states)',
+                'purpose': 'Recruitment center, indoctrination facility, civilian cover',
+                'notable_features': 'Seemingly normal town, hidden Cobra facilities, brainwashed residents',
+                'first_appearance': '1986',
+                'wiki_url': 'https://gijoe.fandom.com/wiki/Millville'
             }
         ]
         
