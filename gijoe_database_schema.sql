@@ -1,5 +1,6 @@
--- G.I. Joe Database Extension Script
+-- G.I. Joe Database Extension Script for SQLite
 -- Adds tables for comprehensive G.I. Joe data from gijoe.fandom.com
+-- Database Type: SQLite
 
 -- G.I. Joe Characters table (enhanced version of character_lookups)
 CREATE TABLE IF NOT EXISTS gijoe_characters (
