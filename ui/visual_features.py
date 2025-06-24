@@ -5,29 +5,28 @@ as specified in the project requirements.
 """
 
 # Type imports for when matplotlib is available
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
+    # Only import types during type checking to avoid runtime import errors
     try:
-        import matplotlib.pyplot as plt
-        import matplotlib.dates as mdates
-        from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-        from matplotlib.figure import Figure
-        from matplotlib.axes import Axes
+        from matplotlib.figure import Figure  # type: ignore
+        from matplotlib.axes import Axes  # type: ignore
     except ImportError:
-        pass
+        Figure = Any  # type: ignore
+        Axes = Any  # type: ignore
 
 # Runtime imports with fallback
 try:
-    import matplotlib.pyplot as plt
-    import matplotlib.dates as mdates
-    from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-    from matplotlib.figure import Figure
+    import matplotlib.pyplot as plt  # type: ignore
+    import matplotlib.dates as mdates  # type: ignore
+    from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg  # type: ignore
+    from matplotlib.figure import Figure as MatplotlibFigure  # type: ignore
     MATPLOTLIB_AVAILABLE = True
 except ImportError:
     plt = None
     mdates = None
     FigureCanvasTkAgg = None
-    Figure = None
+    MatplotlibFigure = None
     MATPLOTLIB_AVAILABLE = False
 
 import tkinter as tk
