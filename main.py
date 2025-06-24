@@ -13,6 +13,11 @@ from theme_config import GlassmorphicTheme, CobraTheme
 # Import our custom modules
 try:
     from ui.glass_ui import WeatherDisplayPanel, CobraIntelPanel, InteractiveFeaturesPanel, SmartFeaturesPanel, SmartAIPanel
+    from data.weather_api import WeatherAPI
+    from data.gijoe_api import GIJoeAPI
+    from db.sqlite_store import WeatherDatabase
+    from ml.predictor import WeatherPredictor
+    from utils.helpers import TemperatureConverter, DataFormatter, ImageCache, ConfigManager
     UI_AVAILABLE = True
 except ImportError as e:
     print(f"⚠️ Some modules not available: {e}")
