@@ -40,7 +40,17 @@ from PIL import Image, ImageDraw, ImageFont, ImageTk
 import requests
 from io import BytesIO
 
-from ..data.weather_features import WeatherFeatures
+# Handle imports for both direct execution and module import
+try:
+    from ..data.weather_features import WeatherFeatures
+except ImportError:
+    try:
+        from data.weather_features import WeatherFeatures
+    except ImportError:
+        import sys
+        import os
+        sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        from data.weather_features import WeatherFeatures
 
 class VisualFeatures:
     """Visual features for weather data presentation"""
