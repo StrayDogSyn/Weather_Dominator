@@ -14,7 +14,18 @@ import statistics
 import os
 
 from .weather_api import WeatherAPI
-from ..db.sqlite_store import WeatherDatabase
+
+# Handle imports for both direct execution and module import
+try:
+    from ..db.sqlite_store import WeatherDatabase
+except ImportError:
+    try:
+        from db.sqlite_store import WeatherDatabase
+    except ImportError:
+        import sys
+        import os
+        sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        from db.sqlite_store import WeatherDatabase
 
 class WeatherFeatures:
     """Advanced weather data analysis and tracking features"""
