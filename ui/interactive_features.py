@@ -13,9 +13,17 @@ from typing import Dict, List, Optional, Any, Tuple
 import threading
 import time
 
-from ..data.weather_features import WeatherFeatures
-from ..data.weather_api import WeatherAPI
-from ..db.sqlite_store import WeatherDatabase
+# Handle relative imports for both direct execution and module imports
+try:
+    from ..data.weather_features import WeatherFeatures
+    from ..data.weather_api import WeatherAPI
+    from ..db.sqlite_store import WeatherDatabase
+except ImportError:
+    import sys
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from data.weather_features import WeatherFeatures
+    from data.weather_api import WeatherAPI
+    from db.sqlite_store import WeatherDatabase
 
 class InteractiveFeatures:
     """Interactive features for weather application"""
@@ -157,7 +165,7 @@ class InteractiveFeatures:
             print(f"Error tracking mood: {e}")
             return False
     
-    def save_journal_to_text_file(self, filename: str = None) -> str:
+    def save_journal_to_text_file(self, filename: Optional[str] = None) -> str:
         """
         Save journal entries to a text file
         
@@ -187,7 +195,8 @@ class InteractiveFeatures:
                     f.write(f"City: {entry.get('city', 'Unknown')}\n")
                     f.write(f"Mood: {entry.get('mood', 'Unknown')}\n")
                     
-                    weather_data = entry.get('weather_data', {})\n                    if weather_data and 'error' not in weather_data:
+                    weather_data = entry.get('weather_data', {})
+                    if weather_data and 'error' not in weather_data:
                         f.write(f"Weather: {weather_data.get('temperature', 'N/A')}°F - {weather_data.get('description', 'N/A')}\n")
                     
                     f.write(f"Note: {entry.get('note', 'No note')}\n")

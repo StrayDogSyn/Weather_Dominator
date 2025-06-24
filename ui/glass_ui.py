@@ -5,7 +5,7 @@ Create a widget factory for consistent glass-styled components.
 """
 
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox, filedialog
 from typing import Dict, Any, Optional
 import io
 
@@ -32,6 +32,15 @@ except ImportError:
     
     Image = MockImage()
     ImageTk = MockImageTk()
+
+# Import Interactive Features
+try:
+    from .interactive_features import InteractiveFeatures
+    INTERACTIVE_AVAILABLE = True
+except ImportError:
+    print("⚠️ Interactive Features not available")
+    INTERACTIVE_AVAILABLE = False
+    InteractiveFeatures = None
 
 class GlassPanel(tk.Frame):
     """Base class for glassmorphic panels"""
@@ -461,6 +470,535 @@ class CobraIntelPanel(GlassPanel):
         from datetime import datetime
         timestamp = datetime.now().strftime("%H:%M:%S")
         self.last_op_label.config(text=f"Last Operation: {timestamp}")
+
+class InteractiveFeaturesPanel(GlassPanel):
+    """Glassmorphic panel for Interactive Features (Weather Journal, Favorites, Alerts)"""
+    
+    def __init__(self, parent, theme):
+        super().__init__(parent, theme, "🎯 INTERACTIVE COMMAND CENTER")
+        if INTERACTIVE_AVAILABLE and InteractiveFeatures is not None:
+            self.interactive_features = InteractiveFeatures()
+        else:
+            self.interactive_features = None
+        self.create_interactive_widgets()
+    
+    def create_interactive_widgets(self):
+        """Create interactive features widgets"""
+        # Create notebook for tabbed interface
+        notebook_frame = tk.Frame(self, bg=self.theme.GLASS_BG)
+        notebook_frame.pack(fill='both', expand=True, padx=15, pady=10)
+        
+        # Create custom tabbed interface
+        self.create_tab_headers(notebook_frame)
+        self.create_tab_content(notebook_frame)
+        
+        # Set default tab
+        self.current_tab = 0
+        self.show_tab(0)
+    
+    def create_tab_headers(self, parent):
+        """Create tab headers"""
+        self.tab_frame = tk.Frame(parent, bg=self.theme.GLASS_BG)
+        self.tab_frame.pack(fill='x', pady=(0, 10))
+        
+        self.tab_buttons = []
+        tab_configs = [
+            ("📔 JOURNAL", 0, "Weather Journal & Mood Tracking"),
+            ("⭐ FAVORITES", 1, "Favorite Cities & Quick Access"),
+            ("🚨 ALERTS", 2, "Weather Alerts & Notifications")
+        ]
+        
+        for text, index, tooltip in tab_configs:
+            btn = tk.Button(
+                self.tab_frame,
+                text=text,
+                font=self.theme.SMALL_FONT,
+                bg=self.theme.INPUT_BG,
+                fg=self.theme.TEXT_COLOR,
+                activebackground=self.theme.PRIMARY_ACCENT,
+                activeforeground='white',
+                relief='flat',
+                bd=0,
+                pady=8,
+                command=lambda i=index: self.show_tab(i)
+            )
+            btn.pack(side='left', fill='x', expand=True, padx=2)
+            self.tab_buttons.append(btn)
+    
+    def create_tab_content(self, parent):
+        """Create content for all tabs"""
+        self.content_frame = tk.Frame(parent, bg=self.theme.GLASS_BG)
+        self.content_frame.pack(fill='both', expand=True)
+        
+        # Tab 0: Weather Journal
+        self.journal_frame = tk.Frame(self.content_frame, bg=self.theme.GLASS_BG)
+        self.create_journal_tab()
+        
+        # Tab 1: Favorite Cities
+        self.favorites_frame = tk.Frame(self.content_frame, bg=self.theme.GLASS_BG)
+        self.create_favorites_tab()
+        
+        # Tab 2: Weather Alerts
+        self.alerts_frame = tk.Frame(self.content_frame, bg=self.theme.GLASS_BG)
+        self.create_alerts_tab()
+    
+    def create_journal_tab(self):
+        """Create weather journal tab"""
+        # Journal entry section
+        entry_frame = tk.Frame(self.journal_frame, bg=self.theme.GLASS_BG)
+        entry_frame.pack(fill='x', pady=(0, 10))
+        
+        # City input
+        tk.Label(entry_frame, text="City:", font=self.theme.SMALL_FONT, 
+                fg=self.theme.TEXT_COLOR, bg=self.theme.GLASS_BG).pack(anchor='w')
+        self.journal_city_entry = tk.Entry(
+            entry_frame, font=self.theme.SMALL_FONT, bg=self.theme.INPUT_BG,
+            fg=self.theme.INPUT_FG, relief='flat', bd=1
+        )
+        self.journal_city_entry.pack(fill='x', pady=(2, 5))
+        
+        # Mood selection
+        tk.Label(entry_frame, text="Mood:", font=self.theme.SMALL_FONT,
+                fg=self.theme.TEXT_COLOR, bg=self.theme.GLASS_BG).pack(anchor='w')
+        self.mood_var = tk.StringVar(value="neutral")
+        mood_frame = tk.Frame(entry_frame, bg=self.theme.GLASS_BG)
+        mood_frame.pack(fill='x', pady=(2, 5))
+        
+        moods = [("😊 Happy", "happy"), ("😐 Neutral", "neutral"), ("😢 Sad", "sad"), 
+                ("⚡ Energetic", "energetic"), ("😌 Calm", "calm")]
+        for i, (text, value) in enumerate(moods):
+            tk.Radiobutton(
+                mood_frame, text=text, variable=self.mood_var, value=value,
+                font=('Arial', 8), bg=self.theme.GLASS_BG, fg=self.theme.TEXT_COLOR,
+                selectcolor=self.theme.PRIMARY_ACCENT, relief='flat'
+            ).pack(side='left' if i < 3 else 'left', padx=5)
+        
+        # Note input
+        tk.Label(entry_frame, text="Weather Note:", font=self.theme.SMALL_FONT,
+                fg=self.theme.TEXT_COLOR, bg=self.theme.GLASS_BG).pack(anchor='w')
+        self.journal_note_text = tk.Text(
+            entry_frame, height=3, font=self.theme.SMALL_FONT,
+            bg=self.theme.INPUT_BG, fg=self.theme.INPUT_FG, relief='flat', bd=1
+        )
+        self.journal_note_text.pack(fill='x', pady=(2, 5))
+        
+        # Buttons
+        button_frame = tk.Frame(entry_frame, bg=self.theme.GLASS_BG)
+        button_frame.pack(fill='x', pady=5)
+        
+        tk.Button(
+            button_frame, text="📝 Add Entry", font=self.theme.SMALL_FONT,
+            bg=self.theme.PRIMARY_ACCENT, fg='white', relief='flat', bd=0,
+            command=self.add_journal_entry
+        ).pack(side='left', padx=(0, 5))
+        
+        tk.Button(
+            button_frame, text="💾 Export Journal", font=self.theme.SMALL_FONT,
+            bg=self.theme.SECONDARY_ACCENT, fg='white', relief='flat', bd=0,
+            command=self.export_journal
+        ).pack(side='left', padx=5)
+        
+        tk.Button(
+            button_frame, text="🧠 Analyze Mood", font=self.theme.SMALL_FONT,
+            bg="#6a5acd", fg='white', relief='flat', bd=0,
+            command=self.analyze_mood
+        ).pack(side='left', padx=5)
+        
+        # Recent entries display
+        tk.Label(self.journal_frame, text="Recent Journal Entries:", 
+                font=self.theme.LABEL_FONT, fg=self.theme.PRIMARY_ACCENT,
+                bg=self.theme.GLASS_BG).pack(anchor='w', pady=(10, 5))
+        
+        # Scrollable text widget for entries
+        self.journal_display = tk.Text(
+            self.journal_frame, height=8, font=self.theme.SMALL_FONT,
+            bg=self.theme.INPUT_BG, fg=self.theme.INPUT_FG, relief='flat', bd=1,
+            state='disabled'
+        )
+        self.journal_display.pack(fill='both', expand=True, pady=(0, 5))
+        
+        # Load recent entries
+        self.refresh_journal_display()
+    
+    def create_favorites_tab(self):
+        """Create favorite cities tab"""
+        # Add favorite section
+        add_frame = tk.Frame(self.favorites_frame, bg=self.theme.GLASS_BG)
+        add_frame.pack(fill='x', pady=(0, 10))
+        
+        # City input
+        tk.Label(add_frame, text="City Name:", font=self.theme.SMALL_FONT,
+                fg=self.theme.TEXT_COLOR, bg=self.theme.GLASS_BG).pack(anchor='w')
+        self.fav_city_entry = tk.Entry(
+            add_frame, font=self.theme.SMALL_FONT, bg=self.theme.INPUT_BG,
+            fg=self.theme.INPUT_FG, relief='flat', bd=1
+        )
+        self.fav_city_entry.pack(fill='x', pady=(2, 5))
+        
+        # Nickname input
+        tk.Label(add_frame, text="Nickname (optional):", font=self.theme.SMALL_FONT,
+                fg=self.theme.TEXT_COLOR, bg=self.theme.GLASS_BG).pack(anchor='w')
+        self.fav_nickname_entry = tk.Entry(
+            add_frame, font=self.theme.SMALL_FONT, bg=self.theme.INPUT_BG,
+            fg=self.theme.INPUT_FG, relief='flat', bd=1
+        )
+        self.fav_nickname_entry.pack(fill='x', pady=(2, 5))
+        
+        # Add button
+        tk.Button(
+            add_frame, text="⭐ Add to Favorites", font=self.theme.SMALL_FONT,
+            bg=self.theme.PRIMARY_ACCENT, fg='white', relief='flat', bd=0,
+            command=self.add_favorite_city
+        ).pack(fill='x', pady=5)
+        
+        # Favorites list
+        tk.Label(self.favorites_frame, text="Favorite Cities:", 
+                font=self.theme.LABEL_FONT, fg=self.theme.PRIMARY_ACCENT,
+                bg=self.theme.GLASS_BG).pack(anchor='w', pady=(10, 5))
+        
+        # Scrollable frame for favorites
+        self.favorites_display = tk.Text(
+            self.favorites_frame, height=10, font=self.theme.SMALL_FONT,
+            bg=self.theme.INPUT_BG, fg=self.theme.INPUT_FG, relief='flat', bd=1,
+            state='disabled'
+        )
+        self.favorites_display.pack(fill='both', expand=True)
+        
+        # Refresh favorites display
+        self.refresh_favorites_display()
+    
+    def create_alerts_tab(self):
+        """Create weather alerts tab"""
+        # Alert setup section
+        setup_frame = tk.Frame(self.alerts_frame, bg=self.theme.GLASS_BG)
+        setup_frame.pack(fill='x', pady=(0, 10))
+        
+        # City input
+        tk.Label(setup_frame, text="City to Monitor:", font=self.theme.SMALL_FONT,
+                fg=self.theme.TEXT_COLOR, bg=self.theme.GLASS_BG).pack(anchor='w')
+        self.alert_city_entry = tk.Entry(
+            setup_frame, font=self.theme.SMALL_FONT, bg=self.theme.INPUT_BG,
+            fg=self.theme.INPUT_FG, relief='flat', bd=1
+        )
+        self.alert_city_entry.pack(fill='x', pady=(2, 5))
+        
+        # Temperature thresholds
+        temp_frame = tk.Frame(setup_frame, bg=self.theme.GLASS_BG)
+        temp_frame.pack(fill='x', pady=5)
+        
+        tk.Label(temp_frame, text="Min Temp (°F):", font=self.theme.SMALL_FONT,
+                fg=self.theme.TEXT_COLOR, bg=self.theme.GLASS_BG).pack(side='left')
+        self.min_temp_entry = tk.Entry(
+            temp_frame, width=8, font=self.theme.SMALL_FONT, bg=self.theme.INPUT_BG,
+            fg=self.theme.INPUT_FG, relief='flat', bd=1
+        )
+        self.min_temp_entry.pack(side='left', padx=(5, 15))
+        self.min_temp_entry.insert(0, "32")
+        
+        tk.Label(temp_frame, text="Max Temp (°F):", font=self.theme.SMALL_FONT,
+                fg=self.theme.TEXT_COLOR, bg=self.theme.GLASS_BG).pack(side='left')
+        self.max_temp_entry = tk.Entry(
+            temp_frame, width=8, font=self.theme.SMALL_FONT, bg=self.theme.INPUT_BG,
+            fg=self.theme.INPUT_FG, relief='flat', bd=1
+        )
+        self.max_temp_entry.pack(side='left', padx=5)
+        self.max_temp_entry.insert(0, "90")
+        
+        # Alert buttons
+        alert_button_frame = tk.Frame(setup_frame, bg=self.theme.GLASS_BG)
+        alert_button_frame.pack(fill='x', pady=5)
+        
+        tk.Button(
+            alert_button_frame, text="🚨 Set Alert", font=self.theme.SMALL_FONT,
+            bg=self.theme.DANGER_COLOR, fg='white', relief='flat', bd=0,
+            command=self.set_temperature_alert
+        ).pack(side='left', padx=(0, 5))
+        
+        tk.Button(
+            alert_button_frame, text="🔔 Start Monitoring", font=self.theme.SMALL_FONT,
+            bg="#32cd32", fg='white', relief='flat', bd=0,
+            command=self.start_alert_monitoring
+        ).pack(side='left', padx=5)
+        
+        # Active alerts display
+        tk.Label(self.alerts_frame, text="Active Alerts:", 
+                font=self.theme.LABEL_FONT, fg=self.theme.PRIMARY_ACCENT,
+                bg=self.theme.GLASS_BG).pack(anchor='w', pady=(10, 5))
+        
+        self.alerts_display = tk.Text(
+            self.alerts_frame, height=8, font=self.theme.SMALL_FONT,
+            bg=self.theme.INPUT_BG, fg=self.theme.INPUT_FG, relief='flat', bd=1,
+            state='disabled'
+        )
+        self.alerts_display.pack(fill='both', expand=True)
+        
+        # Refresh alerts display
+        self.refresh_alerts_display()
+    
+    def show_tab(self, tab_index):
+        """Show the specified tab"""
+        # Update button appearances
+        for i, btn in enumerate(self.tab_buttons):
+            if i == tab_index:
+                btn.config(bg=self.theme.PRIMARY_ACCENT, fg='white')
+            else:
+                btn.config(bg=self.theme.INPUT_BG, fg=self.theme.TEXT_COLOR)
+        
+        # Hide all frames
+        for frame in [self.journal_frame, self.favorites_frame, self.alerts_frame]:
+            frame.pack_forget()
+        
+        # Show selected frame
+        if tab_index == 0:
+            self.journal_frame.pack(fill='both', expand=True)
+        elif tab_index == 1:
+            self.favorites_frame.pack(fill='both', expand=True)
+        elif tab_index == 2:
+            self.alerts_frame.pack(fill='both', expand=True)
+        
+        self.current_tab = tab_index
+    
+    def add_journal_entry(self):
+        """Add a new journal entry"""
+        if not self.interactive_features:
+            messagebox.showinfo("Demo Mode", "Interactive features not available in demo mode")
+            return
+        
+        city = self.journal_city_entry.get().strip()
+        mood = self.mood_var.get()
+        note = self.journal_note_text.get("1.0", tk.END).strip()
+        
+        if not city or not note:
+            messagebox.showwarning("Input Required", "Please enter both city and note")
+            return
+        
+        try:
+            success = self.interactive_features.add_daily_weather_note(city, note, mood)
+            if success:
+                messagebox.showinfo("Success", "Journal entry added successfully!")
+                # Clear inputs
+                self.journal_city_entry.delete(0, tk.END)
+                self.journal_note_text.delete("1.0", tk.END)
+                # Refresh display
+                self.refresh_journal_display()
+            else:
+                messagebox.showerror("Error", "Failed to add journal entry")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error adding journal entry: {e}")
+    
+    def export_journal(self):
+        """Export journal to text file"""
+        if not self.interactive_features:
+            messagebox.showinfo("Demo Mode", "Interactive features not available in demo mode")
+            return
+        
+        try:
+            filepath = self.interactive_features.save_journal_to_text_file()
+            if filepath:
+                messagebox.showinfo("Export Success", f"Journal exported to:\n{filepath}")
+            else:
+                messagebox.showerror("Export Error", "Failed to export journal")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error exporting journal: {e}")
+    
+    def analyze_mood(self):
+        """Analyze mood patterns"""
+        if not self.interactive_features:
+            messagebox.showinfo("Demo Mode", "Interactive features not available in demo mode")
+            return
+        
+        try:
+            analysis = self.interactive_features.analyze_mood_weather_correlation()
+            if "error" not in analysis:
+                insights = analysis.get('insights', [])
+                total_entries = analysis.get('total_entries', 0)
+                
+                if insights:
+                    insight_text = f"Analysis of {total_entries} entries:\n\n" + "\n".join(insights)
+                else:
+                    insight_text = f"Analyzed {total_entries} entries. No significant patterns found yet."
+                
+                messagebox.showinfo("Mood Analysis", insight_text)
+            else:
+                messagebox.showinfo("Analysis", "Not enough data for analysis yet")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error analyzing mood: {e}")
+    
+    def add_favorite_city(self):
+        """Add a city to favorites"""
+        if not self.interactive_features:
+            messagebox.showinfo("Demo Mode", "Interactive features not available in demo mode")
+            return
+        
+        city = self.fav_city_entry.get().strip()
+        nickname = self.fav_nickname_entry.get().strip()
+        
+        if not city:
+            messagebox.showwarning("Input Required", "Please enter a city name")
+            return
+        
+        try:
+            success = self.interactive_features.add_preferred_location(city, nickname=nickname)
+            if success:
+                messagebox.showinfo("Success", f"Added {city} to favorites!")
+                # Clear inputs
+                self.fav_city_entry.delete(0, tk.END)
+                self.fav_nickname_entry.delete(0, tk.END)
+                # Refresh display
+                self.refresh_favorites_display()
+            else:
+                messagebox.showwarning("Duplicate", "City already in favorites or invalid city")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error adding favorite: {e}")
+    
+    def set_temperature_alert(self):
+        """Set temperature alert for a city"""
+        if not self.interactive_features:
+            messagebox.showinfo("Demo Mode", "Interactive features not available in demo mode")
+            return
+        
+        city = self.alert_city_entry.get().strip()
+        
+        if not city:
+            messagebox.showwarning("Input Required", "Please enter a city to monitor")
+            return
+        
+        try:
+            min_temp = float(self.min_temp_entry.get())
+            max_temp = float(self.max_temp_entry.get())
+            
+            if min_temp >= max_temp:
+                messagebox.showwarning("Invalid Range", "Min temperature must be less than max temperature")
+                return
+            
+            success = self.interactive_features.set_temperature_threshold(city, min_temp, max_temp)
+            if success:
+                messagebox.showinfo("Success", f"Temperature alert set for {city}!")
+                self.refresh_alerts_display()
+            else:
+                messagebox.showerror("Error", "Failed to set temperature alert")
+        except ValueError:
+            messagebox.showerror("Invalid Input", "Please enter valid temperature values")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error setting alert: {e}")
+    
+    def start_alert_monitoring(self):
+        """Start alert monitoring"""
+        if not self.interactive_features:
+            messagebox.showinfo("Demo Mode", "Interactive features not available in demo mode")
+            return
+        
+        try:
+            success = self.interactive_features.create_simple_notifications("popup")
+            if success:
+                messagebox.showinfo("Monitoring Started", "Alert monitoring is now active!")
+            else:
+                messagebox.showerror("Error", "Failed to start alert monitoring")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error starting monitoring: {e}")
+    
+    def refresh_journal_display(self):
+        """Refresh the journal entries display"""
+        if not self.interactive_features:
+            self.journal_display.config(state='normal')
+            self.journal_display.delete("1.0", tk.END)
+            self.journal_display.insert("1.0", "Demo Mode: Interactive features not available\n\nTo use the weather journal:\n1. Enter a city name\n2. Select your mood\n3. Write a weather note\n4. Click 'Add Entry'")
+            self.journal_display.config(state='disabled')
+            return
+        
+        try:
+            entries = self.interactive_features.get_journal_entries(7)  # Last 7 days
+            
+            self.journal_display.config(state='normal')
+            self.journal_display.delete("1.0", tk.END)
+            
+            if entries:
+                for entry in entries:
+                    date = entry.get('date', '')[:10]
+                    city = entry.get('city', 'Unknown')
+                    mood = entry.get('mood', 'Unknown')
+                    note = entry.get('note', 'No note')[:50] + ("..." if len(entry.get('note', '')) > 50 else "")
+                    
+                    self.journal_display.insert(tk.END, f"{date} | {city} | {mood.title()}\n{note}\n\n")
+            else:
+                self.journal_display.insert("1.0", "No journal entries found. Add your first entry above!")
+            
+            self.journal_display.config(state='disabled')
+        except Exception as e:
+            self.journal_display.config(state='normal')
+            self.journal_display.delete("1.0", tk.END)
+            self.journal_display.insert("1.0", f"Error loading journal entries: {e}")
+            self.journal_display.config(state='disabled')
+    
+    def refresh_favorites_display(self):
+        """Refresh the favorites display"""
+        if not self.interactive_features:
+            self.favorites_display.config(state='normal')
+            self.favorites_display.delete("1.0", tk.END)
+            self.favorites_display.insert("1.0", "Demo Mode: Interactive features not available\n\nTo use favorite cities:\n1. Enter a city name\n2. Optionally add a nickname\n3. Click 'Add to Favorites'\n4. Use quick switching for easy access")
+            self.favorites_display.config(state='disabled')
+            return
+        
+        try:
+            favorites = self.interactive_features.enable_quick_switching()
+            
+            self.favorites_display.config(state='normal')
+            self.favorites_display.delete("1.0", tk.END)
+            
+            if favorites:
+                for fav in favorites:
+                    city = fav.get('city', 'Unknown')
+                    nickname = fav.get('nickname', city)
+                    temp = fav.get('current_temp', 'N/A')
+                    condition = fav.get('current_condition', 'Unknown')
+                    
+                    self.favorites_display.insert(tk.END, f"⭐ {nickname} ({city})\n")
+                    self.favorites_display.insert(tk.END, f"   {temp}°F - {condition}\n\n")
+            else:
+                self.favorites_display.insert("1.0", "No favorite cities added yet. Add your first favorite above!")
+            
+            self.favorites_display.config(state='disabled')
+        except Exception as e:
+            self.favorites_display.config(state='normal')
+            self.favorites_display.delete("1.0", tk.END)
+            self.favorites_display.insert("1.0", f"Error loading favorites: {e}")
+            self.favorites_display.config(state='disabled')
+    
+    def refresh_alerts_display(self):
+        """Refresh the alerts display"""
+        if not self.interactive_features:
+            self.alerts_display.config(state='normal')
+            self.alerts_display.delete("1.0", tk.END)
+            self.alerts_display.insert("1.0", "Demo Mode: Interactive features not available\n\nTo use weather alerts:\n1. Enter a city to monitor\n2. Set min/max temperature thresholds\n3. Click 'Set Alert'\n4. Start monitoring for notifications")
+            self.alerts_display.config(state='disabled')
+            return
+        
+        try:
+            alerts = self.interactive_features.get_active_alerts()
+            
+            self.alerts_display.config(state='normal')
+            self.alerts_display.delete("1.0", tk.END)
+            
+            if alerts:
+                for alert in alerts:
+                    city = alert.get('city', 'Unknown')
+                    min_temp = alert.get('min_threshold', 'N/A')
+                    max_temp = alert.get('max_threshold', 'N/A')
+                    alert_type = alert.get('alert_type', 'both')
+                    trigger_count = alert.get('trigger_count', 0)
+                    
+                    self.alerts_display.insert(tk.END, f"🚨 {city}\n")
+                    self.alerts_display.insert(tk.END, f"   Thresholds: {min_temp}°F - {max_temp}°F ({alert_type})\n")
+                    self.alerts_display.insert(tk.END, f"   Triggered: {trigger_count} times\n\n")
+            else:
+                self.alerts_display.insert("1.0", "No active alerts. Set up your first alert above!")
+            
+            self.alerts_display.config(state='disabled')
+        except Exception as e:
+            self.alerts_display.config(state='normal')
+            self.alerts_display.delete("1.0", tk.END)
+            self.alerts_display.insert("1.0", f"Error loading alerts: {e}")
+            self.alerts_display.config(state='disabled')
 
 class CobraAlertSystem:
     """Glassmorphic alert system for COBRA-style notifications"""

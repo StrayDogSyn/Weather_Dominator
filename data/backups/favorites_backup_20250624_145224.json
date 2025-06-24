@@ -1,0 +1,26 @@
+[
+  {
+    "id": "london_20250624",
+    "city": "London",
+    "country": "GB",
+    "nickname": "London Town",
+    "added_date": "2025-06-24T14:50:36.839294",
+    "last_checked": "2025-06-24T14:50:36.839299",
+    "check_frequency": "daily",
+    "alert_enabled": true,
+    "temperature_unit": "fahrenheit",
+    "notes": ""
+  },
+  {
+    "id": "los_angeles_20250624",
+    "city": "Los Angeles",
+    "country": "USA",
+    "nickname": "LA",
+    "added_date": "2025-06-24T14:52:24.289147",
+    "last_checked": "2025-06-24T14:52:24.289155",
+    "check_frequency": "daily",
+    "alert_enabled": true,
+    "temperature_unit": "fahrenheit",
+    "notes": ""
+  }
+]

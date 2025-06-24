@@ -12,7 +12,7 @@ from theme_config import GlassmorphicTheme, CobraTheme
 
 # Import our custom modules
 try:
-    from ui.glass_ui import WeatherDisplayPanel, CobraIntelPanel, CobraAlertSystem, create_glass_widget
+    from ui.glass_ui import WeatherDisplayPanel, CobraIntelPanel, CobraAlertSystem, create_glass_widget, InteractiveFeaturesPanel
     from data.weather_api import WeatherAPI
     from data.gijoe_api import GIJoeAPI
     from db.sqlite_store import WeatherDatabase
@@ -27,6 +27,7 @@ except ImportError as e:
     CobraIntelPanel = None
     CobraAlertSystem = None
     create_glass_widget = None
+    InteractiveFeaturesPanel = None
     WeatherAPI = None
     GIJoeAPI = None
     WeatherDatabase = None
@@ -234,33 +235,105 @@ class GlassmorphicWindow:
         separator.pack(fill='x', pady=(15, 0), padx=50)
         
     def create_main_sections(self):
-        """Create the two main sections: Weather Data Display and Cobra Intelligence Panel"""
+        """Create the main sections with tabbed interface for all features"""
         # Create main sections container
         sections_frame = tk.Frame(self.content_frame, bg=self.theme.CONTENT_BG)
         sections_frame.pack(fill='both', expand=True, pady=(10, 0))
         
-        if UI_AVAILABLE and WeatherDisplayPanel is not None and CobraIntelPanel is not None:
+        if UI_AVAILABLE and WeatherDisplayPanel is not None and CobraIntelPanel is not None and InteractiveFeaturesPanel is not None:
             try:
-                # Weather Data Display Panel (left side)
-                self.weather_panel = WeatherDisplayPanel(sections_frame, self.theme)
-                self.weather_panel.pack(side='left', fill='both', expand=True, padx=(0, 10))
-                
-                # Cobra Intelligence Panel (right side)
-                self.cobra_panel = CobraIntelPanel(sections_frame, self.theme)
-                self.cobra_panel.pack(side='right', fill='both', expand=True, padx=(10, 0))
-                
-                # Connect button events
-                self.weather_panel.fetch_button.config(command=self.fetch_weather_data)
-                self.cobra_panel.search_button.config(command=self.search_character_data)
-                
-                # Load sample data on startup
-                self.load_sample_data()
+                # Create tabbed interface
+                self.create_tab_interface(sections_frame)
                 
             except Exception as e:
                 print(f"⚠️ Error creating UI panels: {e}")
                 self.create_fallback_sections(sections_frame)
         else:
             self.create_fallback_sections(sections_frame)
+    
+    def create_tab_interface(self, parent):
+        """Create tabbed interface with all three panels"""
+        # Create tab headers
+        tab_header_frame = tk.Frame(parent, bg=self.theme.CONTENT_BG)
+        tab_header_frame.pack(fill='x', pady=(0, 10))
+        
+        # Tab buttons
+        self.tab_buttons = []
+        self.current_tab = 0
+        
+        tab_configs = [
+            ("⛈️ WEATHER INTEL", 0, "Weather Data & Forecasting"),
+            ("🐍 COBRA INTEL", 1, "Character Intelligence Database"),
+            ("🎯 INTERACTIVE", 2, "Journal, Favorites & Alerts")
+        ]
+        
+        for text, index, tooltip in tab_configs:
+            btn = tk.Button(
+                tab_header_frame,
+                text=text,
+                font=self.theme.BUTTON_FONT,
+                bg=self.theme.INPUT_BG,
+                fg=self.theme.TEXT_COLOR,
+                activebackground=self.theme.PRIMARY_ACCENT,
+                activeforeground='white',
+                relief='flat',
+                bd=0,
+                pady=12,
+                command=lambda i=index: self.show_main_tab(i)
+            )
+            btn.pack(side='left', fill='x', expand=True, padx=5)
+            self.tab_buttons.append(btn)
+        
+        # Create content frame for panels
+        self.panels_container = tk.Frame(parent, bg=self.theme.CONTENT_BG)
+        self.panels_container.pack(fill='both', expand=True)
+        
+        # Create all panels
+        if WeatherDisplayPanel is not None:
+            self.weather_panel = WeatherDisplayPanel(self.panels_container, self.theme)
+        if CobraIntelPanel is not None:
+            self.cobra_panel = CobraIntelPanel(self.panels_container, self.theme)
+        if InteractiveFeaturesPanel is not None:
+            self.interactive_panel = InteractiveFeaturesPanel(self.panels_container, self.theme)
+        
+        # Connect button events
+        if hasattr(self, 'weather_panel'):
+            self.weather_panel.fetch_button.config(command=self.fetch_weather_data)
+        if hasattr(self, 'cobra_panel'):
+            self.cobra_panel.search_button.config(command=self.search_character_data)
+        
+        # Show default tab
+        self.show_main_tab(0)
+        
+        # Load sample data on startup
+        self.load_sample_data()
+    
+    def show_main_tab(self, tab_index):
+        """Show the specified main tab"""
+        # Update button appearances
+        for i, btn in enumerate(self.tab_buttons):
+            if i == tab_index:
+                btn.config(bg=self.theme.PRIMARY_ACCENT, fg='white')
+            else:
+                btn.config(bg=self.theme.INPUT_BG, fg=self.theme.TEXT_COLOR)
+        
+        # Hide all panels
+        if hasattr(self, 'weather_panel'):
+            self.weather_panel.pack_forget()
+        if hasattr(self, 'cobra_panel'):
+            self.cobra_panel.pack_forget()
+        if hasattr(self, 'interactive_panel'):
+            self.interactive_panel.pack_forget()
+        
+        # Show selected panel
+        if tab_index == 0 and hasattr(self, 'weather_panel'):
+            self.weather_panel.pack(fill='both', expand=True, padx=5, pady=5)
+        elif tab_index == 1 and hasattr(self, 'cobra_panel'):
+            self.cobra_panel.pack(fill='both', expand=True, padx=5, pady=5)
+        elif tab_index == 2 and hasattr(self, 'interactive_panel'):
+            self.interactive_panel.pack(fill='both', expand=True, padx=5, pady=5)
+        
+        self.current_tab = tab_index
     
     def load_sample_data(self):
         """Load sample data to demonstrate the interface"""
@@ -292,8 +365,10 @@ class GlassmorphicWindow:
             }
             
             # Update displays with sample data
-            self.weather_panel.update_weather_data(sample_weather)
-            self.cobra_panel.update_character_data(sample_character)
+            if hasattr(self, 'weather_panel'):
+                self.weather_panel.update_weather_data(sample_weather)
+            if hasattr(self, 'cobra_panel'):
+                self.cobra_panel.update_character_data(sample_character)
             
         except Exception as e:
             print(f"⚠️ Error loading sample data: {e}")
@@ -342,6 +417,9 @@ class GlassmorphicWindow:
     
     def fetch_weather_data(self):
         """Fetch weather data from API"""
+        if not hasattr(self, 'weather_panel'):
+            return
+            
         if not self.weather_api:
             # Demo mode - show sample data with real city input
             city = self.weather_panel.city_entry.get().strip() or "Demo City"
@@ -400,6 +478,9 @@ class GlassmorphicWindow:
     
     def search_character_data(self):
         """Search for character data from G.I. Joe API"""
+        if not hasattr(self, 'cobra_panel'):
+            return
+            
         if not self.gijoe_api:
             # Demo mode - show sample data with real character input
             character_name = self.cobra_panel.character_entry.get().strip() or "Demo Agent"

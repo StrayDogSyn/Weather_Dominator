@@ -1,0 +1,69 @@
+[
+  {
+    "id": "New York_20250624_145036",
+    "date": "2025-06-24T14:50:36.749122",
+    "city": "New York",
+    "note": "Beautiful sunny day! #sunny",
+    "mood": "happy",
+    "weather_data": {
+      "city": "New York",
+      "country": "US",
+      "temp": 100,
+      "feels_like": 107,
+      "humidity": 37,
+      "pressure": 1017,
+      "description": "Clear Sky",
+      "icon": "01d",
+      "icon_url": "http://openweathermap.org/img/w/01d.png",
+      "wind_speed": 11.5,
+      "wind_direction": 290,
+      "visibility": 10.0,
+      "sunrise": "05:25",
+      "sunset": "20:31",
+      "timestamp": "2025-06-24 14:50:36",
+      "units": "imperial"
+    },
+    "tags": [
+      "#sunny",
+      "sunny"
+    ]
+  },
+  {
+    "id": "New York_20250624_145224",
+    "date": "2025-06-24T14:52:24.163890",
+    "city": "New York",
+    "note": "Beautiful sunny day, perfect for a walk in the park! #sunny #happy",
+    "mood": "happy",
+    "weather_data": {
+      "city": "New York",
+      "country": "US",
+      "temp": 100,
+      "feels_like": 107,
+      "humidity": 37,
+      "pressure": 1017,
+      "description": "Clear Sky",
+      "icon": "01d",
+      "icon_url": "http://openweathermap.org/img/w/01d.png",
+      "wind_speed": 11.5,
+      "wind_direction": 290,
+      "visibility": 10.0,
+      "sunrise": "05:25",
+      "sunset": "20:31",
+      "timestamp": "2025-06-24 14:52:24",
+      "units": "imperial"
+    },
+    "tags": [
+      "sunny",
+      "#happy",
+      "#sunny"
+    ],
+    "mood_tracking": {
+      "timestamp": "2025-06-24T14:52:24.165349",
+      "mood": "energetic",
+      "weather_condition": "clear sky",
+      "temperature": 75.0,
+      "notes": "Feeling great today!",
+      "mood_score": 4
+    }
+  }
+]

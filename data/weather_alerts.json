@@ -1,0 +1,14 @@
+[
+  {
+    "id": "temp_new_york_20250624",
+    "type": "temperature",
+    "city": "New York",
+    "min_threshold": 32.0,
+    "max_threshold": 90.0,
+    "alert_type": "both",
+    "enabled": true,
+    "created_date": "2025-06-24T14:52:24.523282",
+    "last_triggered": null,
+    "trigger_count": 0
+  }
+]

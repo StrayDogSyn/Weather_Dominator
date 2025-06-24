@@ -1,0 +1,9 @@
+{
+  "notification_method": "console",
+  "check_interval": 15,
+  "quiet_hours_start": "22:00",
+  "quiet_hours_end": "07:00",
+  "temperature_unit": "fahrenheit",
+  "enable_sound": true,
+  "alert_history_days": 30
+}
