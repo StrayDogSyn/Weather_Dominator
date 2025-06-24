@@ -12,21 +12,16 @@ from theme_config import GlassmorphicTheme, CobraTheme
 
 # Import our custom modules
 try:
-    from ui.glass_ui import WeatherDisplayPanel, CobraIntelPanel, InteractiveFeaturesPanel, SmartFeaturesPanel
-    from data.weather_api import WeatherAPI
-    from data.gijoe_api import GIJoeAPI
-    from db.sqlite_store import WeatherDatabase
-    from ml.predictor import WeatherPredictor
-    from utils.helpers import TemperatureConverter, DataFormatter, ImageCache, ConfigManager
+    from ui.glass_ui import WeatherDisplayPanel, CobraIntelPanel, InteractiveFeaturesPanel, SmartFeaturesPanel, SmartAIPanel
     UI_AVAILABLE = True
 except ImportError as e:
     print(f"⚠️ Some modules not available: {e}")
     UI_AVAILABLE = False
-    # Set classes to None when imports fail
     WeatherDisplayPanel = None
     CobraIntelPanel = None
     InteractiveFeaturesPanel = None
     SmartFeaturesPanel = None
+    SmartAIPanel = None
     WeatherAPI = None
     GIJoeAPI = None
     WeatherDatabase = None
@@ -294,8 +289,8 @@ class GlassmorphicWindow:
             self.cobra_panel = CobraIntelPanel(self.panels_container, self.theme)
         if InteractiveFeaturesPanel is not None:
             self.interactive_panel = InteractiveFeaturesPanel(self.panels_container, self.theme)
-        if SmartFeaturesPanel is not None:
-            self.smart_panel = SmartFeaturesPanel(self.panels_container, self.theme)
+        if SmartAIPanel is not None:
+            self.smart_panel = SmartAIPanel(self.panels_container, self.theme)
         
         # Connect button events
         if hasattr(self, 'weather_panel'):

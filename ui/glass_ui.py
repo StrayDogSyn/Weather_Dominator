@@ -1662,14 +1662,13 @@ class SmartFeaturesPanel(GlassPanel):
             self.prediction_text.config(state='disabled')
             
             # Show sample accuracy data
-            self.accuracy_text.config(state='normal')
-            self.accuracy_text.delete("1.0", sample_accuracy)
-            
             sample_accuracy = """📈 Total Predictions: 47
 ✅ Accurate Predictions: 39
 🎯 Accuracy Rate: 83%
 📝 Note: Temperature accuracy within 5°F"""
             
+            self.accuracy_text.config(state='normal')
+            self.accuracy_text.delete("1.0", tk.END)
             self.accuracy_text.insert("1.0", sample_accuracy)
             self.accuracy_text.config(state='disabled')
             
@@ -1806,3 +1805,37 @@ Perfect weather for a scenic walk! Head to a nearby park or waterfront area for 
             
         except Exception as e:
             print(f"Error loading initial smart data: {e}")
+
+class SmartAIPanel(GlassPanel):
+    """Glassmorphic panel for Smart AI features"""
+    def __init__(self, parent, theme):
+        super().__init__(parent, theme, "🤖 SMART AI ANALYSIS")
+        self.create_smart_ai_widgets()
+
+    def create_smart_ai_widgets(self):
+        # Placeholder for smart AI features
+        info_frame = tk.Frame(self, bg=self.theme.GLASS_BG)
+        info_frame.pack(fill='both', expand=True, padx=20, pady=20)
+
+        tk.Label(
+            info_frame,
+            text="AI-driven weather predictions, anomaly detection, and smart recommendations will appear here.",
+            font=self.theme.BODY_FONT,
+            fg=self.theme.SUBTITLE_COLOR,
+            bg=self.theme.GLASS_BG,
+            wraplength=350,
+            justify='center'
+        ).pack(pady=10)
+
+        # Example: Add a button for future smart analysis
+        tk.Button(
+            info_frame,
+            text="🧠 Run Smart Analysis",
+            font=self.theme.BUTTON_FONT,
+            bg=self.theme.PRIMARY_ACCENT,
+            fg='white',
+            relief='flat',
+            bd=0,
+            pady=8,
+            state='disabled'  # Disabled until implemented
+        ).pack(pady=10)
