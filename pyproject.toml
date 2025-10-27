@@ -1,0 +1,85 @@
+[tool.pytest.ini_options]
+# Pytest configuration for Weather Dominator
+
+# Test discovery patterns
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+# Test paths
+testpaths = ["tests"]
+
+# Add src to Python path
+pythonpath = ["."]
+
+# Output options
+addopts = [
+    "-v",                          # Verbose output
+    "--strict-markers",            # Strict marker usage
+    "--tb=short",                  # Short traceback format
+    "--color=yes",                 # Colored output
+    "-ra",                         # Show summary of all test outcomes
+    "--cov=src",                   # Coverage for src directory
+    "--cov-report=term-missing",   # Show missing lines in coverage
+    "--cov-report=html",           # Generate HTML coverage report
+    "--cov-report=xml",            # Generate XML coverage report
+]
+
+# Markers for categorizing tests
+markers = [
+    "unit: Unit tests for individual components",
+    "integration: Integration tests for multiple components",
+    "slow: Tests that take a long time to run",
+    "api: Tests that make actual API calls",
+    "database: Tests that use the database",
+    "ui: Tests for UI components",
+]
+
+# Minimum Python version
+minversion = "7.0"
+
+# Test collection options
+norecursedirs = [
+    ".*",
+    "build",
+    "dist",
+    "*.egg",
+    "venv",
+    "env",
+    "__pycache__",
+]
+
+# Logging configuration for tests
+log_cli = false
+log_cli_level = "INFO"
+log_cli_format = "%(asctime)s [%(levelname)8s] %(name)s: %(message)s"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
+
+# Coverage configuration
+[tool.coverage.run]
+source = ["src"]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/__pycache__/*",
+    "*/venv/*",
+    "*/env/*",
+]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+
+[tool.coverage.html]
+directory = "htmlcov"

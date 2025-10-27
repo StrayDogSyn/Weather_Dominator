@@ -10,14 +10,25 @@ from typing import Dict, List, Optional, Any
 import re
 from urllib.parse import quote
 
+from src.logger import get_logger
+from src.exceptions import APIError
+from src.constants import APIConstants
+
+# Initialize logger for this module
+logger = get_logger(__name__)
+
 class GIJoeAPI:
     """G.I. Joe Fandom API integration for fetching Cobra character data"""
     
     def __init__(self):
         """Initialize G.I. Joe Fandom API client"""
-        self.base_url = "https://gijoe.fandom.com/api.php"
-        self.wiki_url = "https://gijoe.fandom.com/wiki"
+        logger.debug("Initializing GIJoeAPI client")
+        
+        self.base_url = APIConstants.GIJOE_BASE_URL.value
+        self.wiki_url = APIConstants.GIJOE_WIKI_URL.value
         self.image_base_url = "https://static.wikia.nocookie.net/gijoe/images"
+        
+        logger.debug(f"API initialized: base_url={self.base_url}, wiki_url={self.wiki_url}")
         
         # Expanded Cobra character database with detailed information
         self.cobra_characters = [
@@ -65,7 +76,12 @@ class GIJoeAPI:
             
         Returns:
             Dictionary containing search results or error information
+            
+        Raises:
+            APIError: If the search request fails
         """
+        logger.info(f"Searching for character: {character_name}")
+        
         try:
             params = {
                 "action": "query",
@@ -76,17 +92,20 @@ class GIJoeAPI:
                 "srprop": "snippet|titlesnippet|size"
             }
             
-            response = requests.get(self.base_url, params=params, timeout=10)
+            logger.debug(f"Making search request to {self.base_url}")
+            response = requests.get(self.base_url, params=params, timeout=APIConstants.API_TIMEOUT.value)
             response.raise_for_status()
             
             data = response.json()
             search_results = data.get("query", {}).get("search", [])
             
             if not search_results:
-                return {"error": f"No results found for '{character_name}'"}
+                logger.warning(f"No results found for '{character_name}'")
+                raise APIError(f"No results found for '{character_name}'")
             
             # Return the first result
             result = search_results[0]
+            logger.info(f"Found character: {result['title']}")
             return {
                 "title": result["title"],
                 "snippet": self._clean_html(result.get("snippet", "")),
@@ -94,10 +113,18 @@ class GIJoeAPI:
                 "size": result["size"]
             }
             
+        except requests.exceptions.Timeout:
+            logger.error(f"Request timeout searching for '{character_name}'")
+            raise APIError(f"Request timeout while searching for '{character_name}'")
+        except requests.exceptions.HTTPError as e:
+            logger.error(f"HTTP error searching for '{character_name}': {e}")
+            raise APIError(f"HTTP error: {str(e)}")
         except requests.exceptions.RequestException as e:
-            return {"error": f"Network error: {str(e)}"}
+            logger.error(f"Network error searching for '{character_name}': {e}")
+            raise APIError(f"Network error: {str(e)}")
         except Exception as e:
-            return {"error": f"Search error: {str(e)}"}
+            logger.exception(f"Unexpected error searching for '{character_name}'")
+            raise APIError(f"Search error: {str(e)}")
     
     def get_character_data(self, character_name: str) -> Dict[str, Any]:
         """
@@ -108,16 +135,21 @@ class GIJoeAPI:
             
         Returns:
             Dictionary containing character data or error information
+            
+        Raises:
+            APIError: If character data retrieval fails
         """
+        logger.info(f"Fetching detailed character data for: {character_name}")
+        
         try:
             # First, search for the character to get the exact page title
-            search_result = self.search_character(character_name)
-            
-            if "error" in search_result:
+            try:
+                search_result = self.search_character(character_name)
+                page_title = search_result["title"]
+            except APIError:
                 # Try searching from common Cobra characters
+                logger.warning(f"Search failed, trying fallback for '{character_name}'")
                 return self._get_fallback_character(character_name)
-            
-            page_title = search_result["title"]
             
             # Get page content
             params = {
@@ -132,21 +164,24 @@ class GIJoeAPI:
                 "inprop": "url"
             }
             
-            response = requests.get(self.base_url, params=params, timeout=10)
+            logger.debug(f"Fetching page content for: {page_title}")
+            response = requests.get(self.base_url, params=params, timeout=APIConstants.API_TIMEOUT.value)
             response.raise_for_status()
             
             data = response.json()
             pages = data.get("query", {}).get("pages", {})
             
             if not pages:
-                return {"error": f"No page data found for '{character_name}'"}
+                logger.error(f"No page data found for '{character_name}'")
+                raise APIError(f"No page data found for '{character_name}'")
             
             # Get the first (and usually only) page
             page_id = list(pages.keys())[0]
             page_data = pages[page_id]
             
             if page_id == "-1":  # Page not found
-                return {"error": f"Character page not found for '{character_name}'"}
+                logger.error(f"Character page not found for '{character_name}'")
+                raise APIError(f"Character page not found for '{character_name}'")
             
             # Extract character information
             character_data = {
@@ -159,12 +194,21 @@ class GIJoeAPI:
                 "is_cobra": self._is_cobra_character(page_data.get("extract", ""))
             }
             
+            logger.info(f"Successfully retrieved data for character: {character_data['name']}")
             return character_data
             
+        except requests.exceptions.Timeout:
+            logger.error(f"Request timeout for character '{character_name}'")
+            raise APIError(f"Request timeout while fetching character data for '{character_name}'")
+        except requests.exceptions.HTTPError as e:
+            logger.error(f"HTTP error for character '{character_name}': {e}")
+            raise APIError(f"HTTP error: {str(e)}")
         except requests.exceptions.RequestException as e:
-            return {"error": f"Network error: {str(e)}"}
+            logger.error(f"Network error for character '{character_name}': {e}")
+            raise APIError(f"Network error: {str(e)}")
         except Exception as e:
-            return {"error": f"Data retrieval error: {str(e)}"}
+            logger.exception(f"Unexpected error retrieving character '{character_name}'")
+            raise APIError(f"Data retrieval error: {str(e)}")
     
     def get_random_cobra_character(self) -> Dict[str, Any]:
         """
@@ -172,9 +216,13 @@ class GIJoeAPI:
         
         Returns:
             Dictionary containing character data
+            
+        Raises:
+            APIError: If character data retrieval fails
         """
         import random
         character = random.choice(self.cobra_characters)
+        logger.info(f"Getting random Cobra character: {character}")
         return self.get_character_data(character)
     
     def search_cobra_characters(self, query: str = "Cobra") -> List[Dict[str, Any]]:
@@ -186,7 +234,12 @@ class GIJoeAPI:
             
         Returns:
             List of character search results
+            
+        Raises:
+            APIError: If search request fails
         """
+        logger.info(f"Searching for Cobra characters with query: {query}")
+        
         try:
             params = {
                 "action": "query",
@@ -197,7 +250,8 @@ class GIJoeAPI:
                 "srprop": "snippet|titlesnippet"
             }
             
-            response = requests.get(self.base_url, params=params, timeout=10)
+            logger.debug(f"Making Cobra search request")
+            response = requests.get(self.base_url, params=params, timeout=APIConstants.API_TIMEOUT.value)
             response.raise_for_status()
             
             data = response.json()
@@ -212,10 +266,21 @@ class GIJoeAPI:
                         "wiki_url": f"{self.wiki_url}/{quote(result['title'])}"
                     })
             
+            logger.info(f"Found {len(characters)} Cobra characters")
             return characters
             
+        except requests.exceptions.Timeout:
+            logger.error(f"Request timeout searching for Cobra characters")
+            raise APIError(f"Request timeout while searching for Cobra characters")
+        except requests.exceptions.HTTPError as e:
+            logger.error(f"HTTP error searching for Cobra characters: {e}")
+            raise APIError(f"HTTP error: {str(e)}")
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Network error searching for Cobra characters: {e}")
+            raise APIError(f"Network error: {str(e)}")
         except Exception as e:
-            return [{"error": f"Search error: {str(e)}"}]
+            logger.exception(f"Unexpected error searching for Cobra characters")
+            raise APIError(f"Search error: {str(e)}")
     
     def _get_fallback_character(self, character_name: str) -> Dict[str, Any]:
         """Get a fallback character if search fails"""
@@ -815,77 +880,78 @@ def get_cobra_image_gallery(characters: List[str]) -> Dict[str, List[str]]:
 # Example usage and testing
 if __name__ == "__main__":
     # Test the Enhanced G.I. Joe API
+    logger.info("Starting GIJoeAPI test")
     gijoe_api = GIJoeAPI()
     
-    print("🐍 COBRA Intelligence System - Enhanced Features Test 🐍")
-    print("=" * 60)
+    logger.info("=" * 60)
     
     # Test enhanced character data
     test_character = "Cobra Commander"
-    print(f"\n📋 Testing Enhanced Intel Package for {test_character}:")
-    intel_package = gijoe_api.get_cobra_intel_package(test_character)
+    logger.info(f"Testing Enhanced Intel Package for {test_character}")
     
-    if "error" not in intel_package:
-        print(f"✅ Name: {intel_package['name']}")
-        print(f"✅ Rank: {intel_package['rank']}")
-        print(f"✅ Threat Level: {intel_package['threat_level']}")
-        print(f"✅ Base of Operations: {intel_package['base_of_operations']}")
-        print(f"✅ Specialties: {', '.join(intel_package['specialties'])}")
-        print(f"✅ Vehicles: {', '.join(intel_package['vehicles'])}")
-        print(f"✅ Classification: {intel_package['cobra_classification']['category']}")
+    try:
+        intel_package = gijoe_api.get_cobra_intel_package(test_character)
+        logger.info(f"Name: {intel_package['name']}")
+        logger.info(f"Rank: {intel_package['rank']}")
+        logger.info(f"Threat Level: {intel_package['threat_level']}")
+        logger.info(f"Base of Operations: {intel_package['base_of_operations']}")
+        logger.info(f"Specialties: {', '.join(intel_package['specialties'])}")
+        logger.info(f"Vehicles: {', '.join(intel_package['vehicles'])}")
+        logger.info(f"Classification: {intel_package['cobra_classification']['category']}")
         if intel_package['image_gallery']:
-            print(f"✅ Images Available: {len(intel_package['image_gallery'])}")
-    else:
-        print(f"❌ Error: {intel_package['error']}")
+            logger.info(f"Images Available: {len(intel_package['image_gallery'])}")
+    except APIError as e:
+        logger.error(f"Error fetching intel package: {e}")
     
     # Test vehicle data
-    print(f"\n🚁 Testing Vehicle Intelligence for HISS Tank:")
-    vehicle_data = gijoe_api.get_cobra_vehicle_data("HISS Tank")
-    
-    if "error" not in vehicle_data:
-        print(f"✅ Vehicle: {vehicle_data['name']}")
-        print(f"✅ Type: {vehicle_data['vehicle_type']}")
-        print(f"✅ Crew: {vehicle_data['crew_size']}")
-        print(f"✅ Armament: {', '.join(vehicle_data['armament'])}")
-    else:
-        print(f"❌ Error: {vehicle_data['error']}")
+    logger.info("Testing Vehicle Intelligence for HISS Tank")
+    try:
+        vehicle_data = gijoe_api.get_cobra_vehicle_data("HISS Tank")
+        logger.info(f"Vehicle: {vehicle_data['name']}")
+        logger.info(f"Type: {vehicle_data['vehicle_type']}")
+        logger.info(f"Crew: {vehicle_data['crew_size']}")
+        logger.info(f"Armament: {', '.join(vehicle_data['armament'])}")
+    except APIError as e:
+        logger.error(f"Error fetching vehicle data: {e}")
     
     # Test hierarchy data
-    print(f"\n🏢 Testing Cobra Organization Hierarchy:")
+    logger.info("Testing Cobra Organization Hierarchy")
     hierarchy = gijoe_api.get_cobra_hierarchy_data()
     
-    print(f"✅ Organization: {hierarchy['organization_structure']}")
-    print(f"✅ Primary Goal: {hierarchy['primary_goal']}")
-    print(f"✅ Total Members: {hierarchy['total_members']}")
-    print(f"✅ Headquarters: {hierarchy['headquarters']}")
+    logger.info(f"Organization: {hierarchy['organization_structure']}")
+    logger.info(f"Primary Goal: {hierarchy['primary_goal']}")
+    logger.info(f"Total Members: {hierarchy['total_members']}")
+    logger.info(f"Headquarters: {hierarchy['headquarters']}")
     
     for rank, members in hierarchy['hierarchy'].items():
         if members:
-            print(f"  🎖️ {rank}: {len(members)} members")
+            logger.info(f"{rank}: {len(members)} members")
     
     # Test mission briefing
-    print(f"\n📊 Testing Mission Briefing Generation:")
+    logger.info("Testing Mission Briefing Generation")
     mission = gijoe_api.get_cobra_mission_briefing("weather_domination")
     
-    print(f"✅ Mission: {mission['mission_name']}")
-    print(f"✅ Objective: {mission['objective']}")
-    print(f"✅ Threat Assessment: {mission['threat_assessment']}")
-    print(f"✅ Primary Agents: {', '.join(mission['primary_agents'])}")
-    print(f"✅ Agent Profiles: {len(mission['agent_profiles'])} detailed profiles")
+    logger.info(f"Mission: {mission['mission_name']}")
+    logger.info(f"Objective: {mission['objective']}")
+    logger.info(f"Threat Assessment: {mission['threat_assessment']}")
+    logger.info(f"Primary Agents: {', '.join(mission['primary_agents'])}")
+    logger.info(f"Agent Profiles: {len(mission['agent_profiles'])} detailed profiles")
     
     # Test random character
-    print(f"\n🎲 Testing Random Cobra Character:")
-    random_char = gijoe_api.get_random_cobra_character()
-    if "error" not in random_char:
-        print(f"✅ Random Selection: {random_char['name']}")
-        print(f"✅ Bio: {random_char['bio']}")
+    logger.info("Testing Random Cobra Character")
+    try:
+        random_char = gijoe_api.get_random_cobra_character()
+        logger.info(f"Random Selection: {random_char['name']}")
+        logger.info(f"Bio: {random_char['bio']}")
+    except APIError as e:
+        logger.error(f"Error fetching random character: {e}")
     
     # Test image gallery
-    print(f"\n🖼️ Testing Image Gallery for Top Characters:")
+    logger.info("Testing Image Gallery for Top Characters")
     top_characters = ["Cobra Commander", "Destro", "Baroness"]
     image_gallery = gijoe_api.get_multiple_character_images(top_characters)
     
     for char, images in image_gallery.items():
-        print(f"✅ {char}: {len(images)} images available")
+        logger.info(f"{char}: {len(images)} images available")
     
-    print(f"\n🐍 COBRA Intelligence System Test Complete! 🐍")
+    logger.info("COBRA Intelligence System Test Complete!")

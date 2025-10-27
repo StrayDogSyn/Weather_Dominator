@@ -4,6 +4,14 @@ from typing import Dict, List, Optional, Any
 from datetime import datetime
 import os
 
+from src.logger import get_logger
+from src.config_manager import get_config_manager
+from src.exceptions import APIError, ConfigurationError
+from src.constants import APIConstants
+
+# Initialize logger for this module
+logger = get_logger(__name__)
+
 class WeatherAPI:
     """OpenWeatherMap API integration for fetching weather data"""
     
@@ -12,32 +20,39 @@ class WeatherAPI:
         Initialize Weather API client
         
         Args:
-            api_key: OpenWeatherMap API key. If None, will try config.json then environment variables
+            api_key: OpenWeatherMap API key. If None, will try ConfigManager then environment variables
+            
+        Raises:
+            ConfigurationError: If API key cannot be found
         """
-        # Priority order: provided key > config.json > environment variable
+        logger.debug("Initializing WeatherAPI client")
+        
+        # Priority order: provided key > ConfigManager > environment variable
         if api_key:
             self.api_key = api_key
+            logger.debug("Using provided API key")
         else:
-            # Try config.json first
-            self.api_key = None
+            # Try ConfigManager first
             try:
-                if os.path.exists('config.json'):
-                    with open('config.json', 'r') as f:
-                        config = json.load(f)
-                        self.api_key = config.get('api_keys', {}).get('openweather')
-            except Exception:
-                pass
+                config_manager = get_config_manager()
+                self.api_key = config_manager.get('api_keys.openweather')
+                logger.debug("Retrieved API key from ConfigManager")
+            except Exception as e:
+                logger.debug(f"ConfigManager lookup failed: {e}")
+                self.api_key = None
             
             # Fallback to environment variable
             if not self.api_key:
                 self.api_key = os.getenv('OPENWEATHER_API_KEY')
+                if self.api_key:
+                    logger.debug("Retrieved API key from environment variable")
         
-        self.base_url = "http://api.openweathermap.org/data/2.5"
-        self.icon_url = "http://openweathermap.org/img/w"
+        self.base_url = APIConstants.OPENWEATHER_BASE_URL.value
+        self.icon_url = APIConstants.OPENWEATHER_ICON_URL.value
         
         if not self.api_key:
-            print("⚠️ Warning: No OpenWeatherMap API key found.")
-            print("   Add your API key to config.json or set OPENWEATHER_API_KEY environment variable")
+            logger.warning("No OpenWeatherMap API key configured")
+            logger.info("Add your API key to config.json or set OPENWEATHER_API_KEY environment variable")
     
     def get_current_weather(self, city: str, units: str = "imperial") -> Dict[str, Any]:
         """
@@ -49,9 +64,15 @@ class WeatherAPI:
             
         Returns:
             Dictionary containing weather data or error information
+            
+        Raises:
+            APIError: If API request fails or returns invalid data
         """
+        logger.info(f"Fetching current weather for: {city} (units: {units})")
+        
         if not self.api_key:
-            return {"error": "API key not configured"}
+            logger.error("API key not configured")
+            raise ConfigurationError("OpenWeatherMap API key not configured")
             
         try:
             url = f"{self.base_url}/weather"
@@ -61,10 +82,12 @@ class WeatherAPI:
                 "units": units
             }
             
-            response = requests.get(url, params=params, timeout=10)
+            logger.debug(f"Making API request to {url}")
+            response = requests.get(url, params=params, timeout=APIConstants.API_TIMEOUT.value)
             response.raise_for_status()
             
             data = response.json()
+            logger.debug(f"Received weather data for {city}")
             
             # Parse and structure the response
             weather_data = {
@@ -86,14 +109,24 @@ class WeatherAPI:
                 "units": units
             }
             
+            logger.info(f"Successfully fetched weather for {city}: {weather_data['temp']}° {weather_data['description']}")
             return weather_data
             
+        except requests.exceptions.Timeout:
+            logger.error(f"Request timeout for city: {city}")
+            raise APIError(f"Request timeout while fetching weather for {city}")
+        except requests.exceptions.HTTPError as e:
+            logger.error(f"HTTP error for {city}: {e}")
+            raise APIError(f"HTTP error: {str(e)}")
         except requests.exceptions.RequestException as e:
-            return {"error": f"Network error: {str(e)}"}
+            logger.error(f"Network error for {city}: {e}")
+            raise APIError(f"Network error: {str(e)}")
         except KeyError as e:
-            return {"error": f"Data parsing error: {str(e)}"}
+            logger.error(f"Data parsing error for {city}: missing key {e}")
+            raise APIError(f"Invalid response data: missing {str(e)}")
         except Exception as e:
-            return {"error": f"Unexpected error: {str(e)}"}
+            logger.exception(f"Unexpected error fetching weather for {city}")
+            raise APIError(f"Unexpected error: {str(e)}")
     
     def get_weather_forecast(self, city: str, days: int = 5, units: str = "imperial") -> Dict[str, Any]:
         """
@@ -106,9 +139,15 @@ class WeatherAPI:
             
         Returns:
             Dictionary containing forecast data or error information
+            
+        Raises:
+            APIError: If API request fails or returns invalid data
         """
+        logger.info(f"Fetching {days}-day forecast for: {city}")
+        
         if not self.api_key:
-            return {"error": "API key not configured"}
+            logger.error("API key not configured")
+            raise ConfigurationError("OpenWeatherMap API key not configured")
             
         try:
             url = f"{self.base_url}/forecast"
@@ -119,10 +158,12 @@ class WeatherAPI:
                 "cnt": days * 8  # 8 forecasts per day (every 3 hours)
             }
             
-            response = requests.get(url, params=params, timeout=10)
+            logger.debug(f"Making forecast API request to {url}")
+            response = requests.get(url, params=params, timeout=APIConstants.API_TIMEOUT.value)
             response.raise_for_status()
             
             data = response.json()
+            logger.debug(f"Received forecast data for {city}")
             
             # Parse forecast data
             forecasts = []
@@ -150,14 +191,24 @@ class WeatherAPI:
                 "units": units
             }
             
+            logger.info(f"Successfully fetched {len(forecasts)} forecast entries for {city}")
             return forecast_data
             
+        except requests.exceptions.Timeout:
+            logger.error(f"Request timeout for forecast: {city}")
+            raise APIError(f"Request timeout while fetching forecast for {city}")
+        except requests.exceptions.HTTPError as e:
+            logger.error(f"HTTP error for forecast {city}: {e}")
+            raise APIError(f"HTTP error: {str(e)}")
         except requests.exceptions.RequestException as e:
-            return {"error": f"Network error: {str(e)}"}
+            logger.error(f"Network error for forecast {city}: {e}")
+            raise APIError(f"Network error: {str(e)}")
         except KeyError as e:
-            return {"error": f"Data parsing error: {str(e)}"}
+            logger.error(f"Forecast data parsing error for {city}: missing key {e}")
+            raise APIError(f"Invalid forecast data: missing {str(e)}")
         except Exception as e:
-            return {"error": f"Unexpected error: {str(e)}"}
+            logger.exception(f"Unexpected error fetching forecast for {city}")
+            raise APIError(f"Unexpected error: {str(e)}")
     
     def get_weather_alerts(self, lat: float, lon: float) -> Dict[str, Any]:
         """
@@ -169,9 +220,15 @@ class WeatherAPI:
             
         Returns:
             Dictionary containing alert data or error information
+            
+        Raises:
+            APIError: If API request fails or returns invalid data
         """
+        logger.info(f"Fetching weather alerts for coordinates: ({lat}, {lon})")
+        
         if not self.api_key:
-            return {"error": "API key not configured"}
+            logger.error("API key not configured")
+            raise ConfigurationError("OpenWeatherMap API key not configured")
             
         try:
             url = f"{self.base_url}/onecall"
@@ -182,11 +239,13 @@ class WeatherAPI:
                 "exclude": "minutely,hourly,daily"  # Only get alerts
             }
             
-            response = requests.get(url, params=params, timeout=10)
+            logger.debug(f"Making alerts API request to {url}")
+            response = requests.get(url, params=params, timeout=APIConstants.API_TIMEOUT.value)
             response.raise_for_status()
             
             data = response.json()
             alerts = data.get("alerts", [])
+            logger.debug(f"Received {len(alerts)} weather alerts")
             
             # Parse alerts
             alert_data = []
@@ -201,14 +260,24 @@ class WeatherAPI:
                 }
                 alert_data.append(alert_info)
             
+            logger.info(f"Successfully fetched {len(alert_data)} weather alerts")
             return {"alerts": alert_data}
             
+        except requests.exceptions.Timeout:
+            logger.error(f"Request timeout for alerts at ({lat}, {lon})")
+            raise APIError(f"Request timeout while fetching alerts")
+        except requests.exceptions.HTTPError as e:
+            logger.error(f"HTTP error for alerts: {e}")
+            raise APIError(f"HTTP error: {str(e)}")
         except requests.exceptions.RequestException as e:
-            return {"error": f"Network error: {str(e)}"}
+            logger.error(f"Network error for alerts: {e}")
+            raise APIError(f"Network error: {str(e)}")
         except KeyError as e:
-            return {"error": f"Data parsing error: {str(e)}"}
+            logger.error(f"Alert data parsing error: missing key {e}")
+            raise APIError(f"Invalid alert data: missing {str(e)}")
         except Exception as e:
-            return {"error": f"Unexpected error: {str(e)}"}
+            logger.exception(f"Unexpected error fetching alerts")
+            raise APIError(f"Unexpected error: {str(e)}")
     
     def get_coordinates(self, city: str) -> Optional[Dict[str, float]]:
         """
@@ -220,29 +289,38 @@ class WeatherAPI:
         Returns:
             Dictionary with lat/lon or None if not found
         """
+        logger.info(f"Fetching coordinates for: {city}")
+        
         if not self.api_key:
+            logger.error("API key not configured")
             return None
             
         try:
-            url = f"http://api.openweathermap.org/geo/1.0/direct"
+            url = APIConstants.OPENWEATHER_GEO_URL.value
             params = {
                 "q": city,
                 "limit": 1,
                 "appid": self.api_key
             }
             
-            response = requests.get(url, params=params, timeout=10)
+            logger.debug(f"Making geocoding API request to {url}")
+            response = requests.get(url, params=params, timeout=APIConstants.API_TIMEOUT.value)
             response.raise_for_status()
             
             data = response.json()
             if data:
-                return {
+                coords = {
                     "lat": data[0]["lat"],
                     "lon": data[0]["lon"]
                 }
+                logger.info(f"Found coordinates for {city}: {coords}")
+                return coords
+            
+            logger.warning(f"No coordinates found for city: {city}")
             return None
             
-        except Exception:
+        except Exception as e:
+            logger.error(f"Error fetching coordinates for {city}: {e}")
             return None
     
     def check_severe_weather(self, weather_data: Dict[str, Any]) -> List[str]:
@@ -256,11 +334,14 @@ class WeatherAPI:
             List of severe weather conditions detected
         """
         if "error" in weather_data:
+            logger.debug("Cannot check severe weather: error in weather data")
             return []
         
         severe_conditions = []
         description = weather_data.get("description", "").lower()
         wind_speed = weather_data.get("wind_speed", 0)
+        
+        logger.debug(f"Checking severe weather conditions: {description}, wind: {wind_speed}")
         
         # Check for severe weather keywords
         severe_keywords = [
@@ -271,55 +352,69 @@ class WeatherAPI:
         for keyword in severe_keywords:
             if keyword in description:
                 severe_conditions.append(keyword.title())
+                logger.info(f"Severe weather detected: {keyword.title()}")
         
         # Check wind speed (for imperial units - mph)
         if weather_data.get("units") == "imperial" and wind_speed > 25:
             severe_conditions.append("High Winds")
+            logger.info(f"High winds detected: {wind_speed} mph")
         elif weather_data.get("units") == "metric" and wind_speed > 11:  # m/s to mph conversion
             severe_conditions.append("High Winds")
+            logger.info(f"High winds detected: {wind_speed} m/s")
+        
+        if severe_conditions:
+            logger.warning(f"Total severe conditions detected: {len(severe_conditions)}")
         
         return severe_conditions
 
 # Convenience functions for easy use
 def get_weather(city: str, api_key: Optional[str] = None) -> Dict[str, Any]:
     """Convenience function to get current weather"""
+    logger.debug(f"Convenience function: get_weather for {city}")
     weather_api = WeatherAPI(api_key)
     return weather_api.get_current_weather(city)
 
 def get_forecast(city: str, days: int = 5, api_key: Optional[str] = None) -> Dict[str, Any]:
     """Convenience function to get weather forecast"""
+    logger.debug(f"Convenience function: get_forecast for {city}, {days} days")
     weather_api = WeatherAPI(api_key)
     return weather_api.get_weather_forecast(city, days)
 
 def check_alerts(city: str, api_key: Optional[str] = None) -> Dict[str, Any]:
     """Convenience function to check weather alerts"""
+    logger.debug(f"Convenience function: check_alerts for {city}")
     weather_api = WeatherAPI(api_key)
     coords = weather_api.get_coordinates(city)
     if coords:
         return weather_api.get_weather_alerts(coords["lat"], coords["lon"])
+    logger.warning(f"Could not get coordinates for city: {city}")
     return {"error": "Could not get coordinates for city"}
 
 # Example usage and testing
 if __name__ == "__main__":
     # Test the weather API (requires API key)
+    logger.info("Starting WeatherAPI test")
     weather_api = WeatherAPI()
     
     # Test cities
     test_cities = ["New York", "London", "Tokyo"]
     
     for city in test_cities:
-        print(f"\n🌤️ Testing weather for {city}:")
-        weather = weather_api.get_current_weather(city)
+        logger.info(f"Testing weather for {city}")
         
-        if "error" in weather:
-            print(f"❌ Error: {weather['error']}")
-        else:
-            print(f"✅ Temperature: {weather['temp']}°F")
-            print(f"✅ Description: {weather['description']}")
-            print(f"✅ Humidity: {weather['humidity']}%")
-            print(f"✅ Wind: {weather['wind_speed']} mph")
+        try:
+            weather = weather_api.get_current_weather(city)
+            logger.info(f"Temperature: {weather['temp']}°F")
+            logger.info(f"Description: {weather['description']}")
+            logger.info(f"Humidity: {weather['humidity']}%")
+            logger.info(f"Wind: {weather['wind_speed']} mph")
             
             # Check for severe weather
             severe = weather_api.check_severe_weather(weather)
             if severe:
-                print(f"⚠️ Severe conditions: {', '.join(severe)}")
+                logger.warning(f"Severe conditions: {', '.join(severe)}")
+                
+        except (APIError, ConfigurationError) as e:
+            logger.error(f"Error fetching weather for {city}: {e}")
+    
+    logger.info("WeatherAPI test completed")

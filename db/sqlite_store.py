@@ -10,21 +10,39 @@ from datetime import datetime
 from typing import Dict, List, Optional, Any, Tuple
 import os
 
+from src.logger import get_logger
+from src.exceptions import DatabaseError
+from src.constants import DatabaseConstants
+
+# Initialize logger for this module
+logger = get_logger(__name__)
+
 class WeatherDatabase:
     """SQLite database for storing weather data, searches, and predictions"""
     
-    def __init__(self, db_path: str = "weather_dominator.db"):
+    def __init__(self, db_path: Optional[str] = None):
         """
         Initialize the database connection
         
         Args:
-            db_path: Path to the SQLite database file
+            db_path: Path to the SQLite database file. If None, uses default from constants
+            
+        Raises:
+            DatabaseError: If database initialization fails
         """
-        self.db_path = db_path
+        self.db_path = db_path or DatabaseConstants.DEFAULT_DB_PATH.value
+        logger.info(f"Initializing WeatherDatabase at: {self.db_path}")
         self.init_database()
     
     def init_database(self):
-        """Initialize database tables if they don't exist"""
+        """
+        Initialize database tables if they don't exist
+        
+        Raises:
+            DatabaseError: If table creation fails
+        """
+        logger.debug("Initializing database tables")
+        
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
@@ -113,10 +131,11 @@ class WeatherDatabase:
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_character_name ON character_lookups(character_name)")
                 
                 conn.commit()
-                print("✅ Database initialized successfully")
+                logger.info("Database initialized successfully")
                 
         except sqlite3.Error as e:
-            print(f"❌ Database initialization error: {e}")
+            logger.error(f"Database initialization error: {e}")
+            raise DatabaseError(f"Failed to initialize database: {str(e)}")
     
     def log_weather_data(self, weather_data: Dict[str, Any]) -> Optional[int]:
         """
@@ -127,9 +146,15 @@ class WeatherDatabase:
             
         Returns:
             Row ID of inserted record or None if error
+            
+        Raises:
+            DatabaseError: If insert operation fails
         """
         if "error" in weather_data:
+            logger.warning("Cannot log weather data: error in data")
             return None
+        
+        logger.debug(f"Logging weather data for city: {weather_data.get('city')}")
             
         try:
             with sqlite3.connect(self.db_path) as conn:
@@ -156,11 +181,14 @@ class WeatherDatabase:
                     json.dumps(weather_data)
                 ))
                 
-                return cursor.lastrowid
+                conn.commit()
+                row_id = cursor.lastrowid
+                logger.info(f"Weather data logged successfully, ID: {row_id}")
+                return row_id
                 
         except sqlite3.Error as e:
-            self.log_system_error("log_weather_data", str(e))
-            return None
+            logger.error(f"Database error logging weather data: {e}")
+            raise DatabaseError(f"Failed to log weather data: {str(e)}")
     
     def log_user_search(self, search_type: str, search_query: str, results_found: int = 0, 
                        ip_address: Optional[str] = None, session_id: Optional[str] = None) -> Optional[int]:
@@ -176,7 +204,12 @@ class WeatherDatabase:
             
         Returns:
             Row ID of inserted record or None if error
+            
+        Raises:
+            DatabaseError: If insert operation fails
         """
+        logger.debug(f"Logging user search: type={search_type}, query={search_query}")
+        
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
@@ -187,11 +220,14 @@ class WeatherDatabase:
                     ) VALUES (?, ?, ?, ?, ?)
                 """, (search_type, search_query, results_found, ip_address, session_id))
                 
-                return cursor.lastrowid
+                conn.commit()
+                row_id = cursor.lastrowid
+                logger.info(f"User search logged successfully, ID: {row_id}")
+                return row_id
                 
         except sqlite3.Error as e:
-            self.log_system_error("log_user_search", str(e))
-            return None
+            logger.error(f"Database error logging user search: {e}")
+            raise DatabaseError(f"Failed to log user search: {str(e)}")
     
     def log_ml_prediction(self, city: str, prediction_type: str, predicted_value: float,
                          confidence_score: float, model_version: str, features_used: Dict[str, Any],
@@ -281,6 +317,8 @@ class WeatherDatabase:
             error_message: Error message
             log_level: Severity level
         """
+        logger.debug(f"Logging system error from {module}: {error_message}")
+        
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
@@ -290,9 +328,11 @@ class WeatherDatabase:
                     VALUES (?, ?, ?)
                 """, (log_level, module, error_message))
                 
-        except sqlite3.Error:
-            # Can't log database errors to database, print instead
-            print(f"Database logging error in {module}: {error_message}")
+                conn.commit()
+                
+        except sqlite3.Error as e:
+            # Can't log database errors to database, log to application logger instead
+            logger.error(f"Database logging error in {module}: {error_message}, DB Error: {e}")
     
     def get_weather_history(self, city: Optional[str] = None, days: int = 7) -> List[Dict[str, Any]]:
         """
@@ -386,7 +426,12 @@ class WeatherDatabase:
         
         Args:
             days: Number of days to keep (delete older)
+            
+        Raises:
+            DatabaseError: If cleanup operation fails
         """
+        logger.info(f"Clearing data older than {days} days")
+        
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
@@ -421,14 +466,15 @@ class WeatherDatabase:
                 
                 conn.commit()
                 
-                print(f"✅ Cleaned up old data:")
-                print(f"   Weather logs: {weather_deleted} deleted")
-                print(f"   Search logs: {searches_deleted} deleted")
-                print(f"   Character lookups: {characters_deleted} deleted")
-                print(f"   System logs: {logs_deleted} deleted")
+                logger.info(f"Cleaned up old data:")
+                logger.info(f"  Weather logs: {weather_deleted} deleted")
+                logger.info(f"  Search logs: {searches_deleted} deleted")
+                logger.info(f"  Character lookups: {characters_deleted} deleted")
+                logger.info(f"  System logs: {logs_deleted} deleted")
                 
         except sqlite3.Error as e:
-            self.log_system_error("clear_old_data", str(e))
+            logger.error(f"Database error during cleanup: {e}")
+            raise DatabaseError(f"Failed to clear old data: {str(e)}")
     
     def get_database_stats(self) -> Dict[str, Any]:
         """
@@ -481,7 +527,7 @@ def log_search(search_type: str, query: str, results: int = 0, db_path: str = "w
 # Example usage and testing
 if __name__ == "__main__":
     # Test the database
-    print("🗃️ Testing Weather Dominator Database...")
+    logger.info("Testing Weather Dominator Database")
     
     db = WeatherDatabase("test_weather.db")
     
@@ -500,12 +546,18 @@ if __name__ == "__main__":
         "units": "imperial"
     }
     
-    weather_id = db.log_weather_data(sample_weather)
-    print(f"✅ Weather logged with ID: {weather_id}")
+    try:
+        weather_id = db.log_weather_data(sample_weather)
+        logger.info(f"Weather logged with ID: {weather_id}")
+    except DatabaseError as e:
+        logger.error(f"Error logging weather: {e}")
     
     # Test search logging
-    search_id = db.log_user_search("weather", "New York", 1)
-    print(f"✅ Search logged with ID: {search_id}")
+    try:
+        search_id = db.log_user_search("weather", "New York", 1)
+        logger.info(f"Search logged with ID: {search_id}")
+    except DatabaseError as e:
+        logger.error(f"Error logging search: {e}")
     
     # Test character logging
     sample_character = {
@@ -515,11 +567,14 @@ if __name__ == "__main__":
         "wiki_url": "https://gijoe.fandom.com/wiki/Cobra_Commander"
     }
     
-    char_id = db.log_character_lookup("Cobra Commander", sample_character)
-    print(f"✅ Character logged with ID: {char_id}")
+    try:
+        char_id = db.log_character_lookup("Cobra Commander", sample_character)
+        logger.info(f"Character logged with ID: {char_id}")
+    except DatabaseError as e:
+        logger.error(f"Error logging character: {e}")
     
     # Get statistics
     stats = db.get_database_stats()
-    print(f"✅ Database stats: {stats}")
+    logger.info(f"Database stats: {stats}")
     
-    print("🗃️ Database test completed!")
+    logger.info("Database test completed!")
