@@ -7,7 +7,12 @@ import os
 from src.logger import get_logger
 from src.config_manager import get_config_manager
 from src.exceptions import APIError, ConfigurationError
-from src.constants import APIConstants
+from src.constants import (
+    OPENWEATHER_BASE_URL,
+    OPENWEATHER_ICON_URL,
+    OPENWEATHER_GEO_URL,
+    APIConfig,
+)
 
 # Initialize logger for this module
 logger = get_logger(__name__)
@@ -47,8 +52,8 @@ class WeatherAPI:
                 if self.api_key:
                     logger.debug("Retrieved API key from environment variable")
         
-        self.base_url = APIConstants.OPENWEATHER_BASE_URL.value
-        self.icon_url = APIConstants.OPENWEATHER_ICON_URL.value
+        self.base_url = OPENWEATHER_BASE_URL
+        self.icon_url = OPENWEATHER_ICON_URL
         
         if not self.api_key:
             logger.warning("No OpenWeatherMap API key configured")
@@ -83,7 +88,7 @@ class WeatherAPI:
             }
             
             logger.debug(f"Making API request to {url}")
-            response = requests.get(url, params=params, timeout=APIConstants.API_TIMEOUT.value)
+            response = requests.get(url, params=params, timeout=APIConfig.REQUEST_TIMEOUT)
             response.raise_for_status()
             
             data = response.json()
@@ -159,7 +164,7 @@ class WeatherAPI:
             }
             
             logger.debug(f"Making forecast API request to {url}")
-            response = requests.get(url, params=params, timeout=APIConstants.API_TIMEOUT.value)
+            response = requests.get(url, params=params, timeout=APIConfig.REQUEST_TIMEOUT)
             response.raise_for_status()
             
             data = response.json()
@@ -240,7 +245,7 @@ class WeatherAPI:
             }
             
             logger.debug(f"Making alerts API request to {url}")
-            response = requests.get(url, params=params, timeout=APIConstants.API_TIMEOUT.value)
+            response = requests.get(url, params=params, timeout=APIConfig.REQUEST_TIMEOUT)
             response.raise_for_status()
             
             data = response.json()
@@ -296,7 +301,7 @@ class WeatherAPI:
             return None
             
         try:
-            url = APIConstants.OPENWEATHER_GEO_URL.value
+            url = OPENWEATHER_GEO_URL
             params = {
                 "q": city,
                 "limit": 1,
@@ -304,7 +309,7 @@ class WeatherAPI:
             }
             
             logger.debug(f"Making geocoding API request to {url}")
-            response = requests.get(url, params=params, timeout=APIConstants.API_TIMEOUT.value)
+            response = requests.get(url, params=params, timeout=APIConfig.REQUEST_TIMEOUT)
             response.raise_for_status()
             
             data = response.json()

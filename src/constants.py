@@ -62,6 +62,9 @@ class ThemeColors:
     HIGHLIGHT: Final[str] = "#4a6fa5"
     BORDER: Final[str] = "#0f3460"
 
+    # Gradient colors for glassmorphic effect
+    GRADIENT_COLORS: Final[tuple] = ("#16213e", "#1a1a2e", "#0f3460")
+
     # Text
     TITLE_COLOR: Final[str] = "#4a9eff"
     SUBTITLE_COLOR: Final[str] = "#7bb3ff"
@@ -116,6 +119,16 @@ class FontConfig:
     LABEL_SIZE: Final[int] = 9
     BUTTON_SIZE: Final[int] = 10
     SECTION_SIZE: Final[int] = 12
+
+    # Font tuples for tkinter (family, size, weight)
+    TITLE_FONT: Final[tuple] = (FONT_FAMILY, TITLE_SIZE, "bold")
+    SUBTITLE_FONT: Final[tuple] = (FONT_FAMILY, SUBTITLE_SIZE)
+    BODY_FONT: Final[tuple] = (FONT_FAMILY, BODY_SIZE)
+    BUTTON_FONT: Final[tuple] = (FONT_FAMILY, BUTTON_SIZE)
+    SECTION_FONT: Final[tuple] = (FONT_FAMILY, SECTION_SIZE, "bold")
+    LABEL_FONT: Final[tuple] = (FONT_FAMILY, LABEL_SIZE)
+    SMALL_FONT: Final[tuple] = (FONT_FAMILY, SMALL_SIZE)
+    LARGE_FONT: Final[tuple] = (FONT_FAMILY, LARGE_SIZE)
 
 
 # ============================================================================

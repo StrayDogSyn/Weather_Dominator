@@ -12,7 +12,7 @@ from urllib.parse import quote
 
 from src.logger import get_logger
 from src.exceptions import APIError
-from src.constants import APIConstants
+from src.constants import GIJOE_FANDOM_API, GIJOE_WIKI_URL, APIConfig
 
 # Initialize logger for this module
 logger = get_logger(__name__)
@@ -24,8 +24,8 @@ class GIJoeAPI:
         """Initialize G.I. Joe Fandom API client"""
         logger.debug("Initializing GIJoeAPI client")
         
-        self.base_url = APIConstants.GIJOE_BASE_URL.value
-        self.wiki_url = APIConstants.GIJOE_WIKI_URL.value
+        self.base_url = GIJOE_FANDOM_API
+        self.wiki_url = GIJOE_WIKI_URL
         self.image_base_url = "https://static.wikia.nocookie.net/gijoe/images"
         
         logger.debug(f"API initialized: base_url={self.base_url}, wiki_url={self.wiki_url}")
@@ -93,7 +93,7 @@ class GIJoeAPI:
             }
             
             logger.debug(f"Making search request to {self.base_url}")
-            response = requests.get(self.base_url, params=params, timeout=APIConstants.API_TIMEOUT.value)
+            response = requests.get(self.base_url, params=params, timeout=APIConfig.REQUEST_TIMEOUT)
             response.raise_for_status()
             
             data = response.json()
@@ -165,7 +165,7 @@ class GIJoeAPI:
             }
             
             logger.debug(f"Fetching page content for: {page_title}")
-            response = requests.get(self.base_url, params=params, timeout=APIConstants.API_TIMEOUT.value)
+            response = requests.get(self.base_url, params=params, timeout=APIConfig.REQUEST_TIMEOUT)
             response.raise_for_status()
             
             data = response.json()
@@ -251,7 +251,7 @@ class GIJoeAPI:
             }
             
             logger.debug(f"Making Cobra search request")
-            response = requests.get(self.base_url, params=params, timeout=APIConstants.API_TIMEOUT.value)
+            response = requests.get(self.base_url, params=params, timeout=APIConfig.REQUEST_TIMEOUT)
             response.raise_for_status()
             
             data = response.json()

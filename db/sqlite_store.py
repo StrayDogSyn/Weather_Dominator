@@ -12,7 +12,7 @@ import os
 
 from src.logger import get_logger
 from src.exceptions import DatabaseError
-from src.constants import DatabaseConstants
+from src.constants import DEFAULT_DB_PATH
 
 # Initialize logger for this module
 logger = get_logger(__name__)
@@ -30,7 +30,7 @@ class WeatherDatabase:
         Raises:
             DatabaseError: If database initialization fails
         """
-        self.db_path = db_path or DatabaseConstants.DEFAULT_DB_PATH.value
+        self.db_path = db_path or DEFAULT_DB_PATH
         logger.info(f"Initializing WeatherDatabase at: {self.db_path}")
         self.init_database()
     
