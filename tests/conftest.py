@@ -1,12 +1,14 @@
 """
 Pytest configuration and shared fixtures for Weather Dominator tests
 """
-import pytest
+
 import os
+import shutil
 import sys
 import tempfile
-import shutil
 from pathlib import Path
+
+import pytest
 
 # Add src directory to Python path
 src_path = Path(__file__).parent.parent / "src"
@@ -49,7 +51,7 @@ def sample_weather_data():
         "sunrise": "06:30",
         "sunset": "18:45",
         "timestamp": "2025-10-26 12:00:00",
-        "units": "imperial"
+        "units": "imperial",
     }
 
 
@@ -63,7 +65,7 @@ def sample_character_data():
         "image_url": "https://example.com/cobra_commander.jpg",
         "wiki_url": "https://gijoe.fandom.com/wiki/Cobra_Commander",
         "page_id": 12345,
-        "is_cobra": True
+        "is_cobra": True,
     }
 
 
@@ -71,19 +73,9 @@ def sample_character_data():
 def mock_config():
     """Fixture providing mock configuration data"""
     return {
-        "api_keys": {
-            "openweather": "test_weather_key",
-            "gijoe": "test_gijoe_key"
-        },
-        "preferences": {
-            "theme": "cobra",
-            "units": "imperial",
-            "auto_save": True
-        },
-        "window": {
-            "width": 1200,
-            "height": 800
-        }
+        "api_keys": {"openweather": "test_weather_key", "gijoe": "test_gijoe_key"},
+        "preferences": {"theme": "cobra", "units": "imperial", "auto_save": True},
+        "window": {"width": 1200, "height": 800},
     }
 
 
@@ -91,13 +83,13 @@ def mock_config():
 def reset_logging():
     """Fixture to reset logging configuration between tests"""
     import logging
-    
+
     # Store original state
     original_handlers = logging.root.handlers[:]
     original_level = logging.root.level
-    
+
     yield
-    
+
     # Restore original state
     logging.root.handlers = original_handlers
     logging.root.level = original_level
@@ -106,29 +98,30 @@ def reset_logging():
 @pytest.fixture
 def mock_env_vars(monkeypatch):
     """Fixture to set mock environment variables"""
+
     def _set_env(**kwargs):
         for key, value in kwargs.items():
             monkeypatch.setenv(key, value)
-    
+
     return _set_env
 
 
 @pytest.fixture
 def capture_logs():
     """Fixture to capture log output"""
-    import logging
     import io
-    
+    import logging
+
     log_stream = io.StringIO()
     handler = logging.StreamHandler(log_stream)
-    handler.setFormatter(logging.Formatter('%(levelname)s:%(name)s:%(message)s'))
-    
+    handler.setFormatter(logging.Formatter("%(levelname)s:%(name)s:%(message)s"))
+
     root_logger = logging.getLogger()
     root_logger.addHandler(handler)
     root_logger.setLevel(logging.DEBUG)
-    
+
     yield log_stream
-    
+
     root_logger.removeHandler(handler)
 
 
@@ -136,15 +129,9 @@ def capture_logs():
 def pytest_configure(config):
     """Pytest configuration hook"""
     # Register custom markers
-    config.addinivalue_line(
-        "markers", "unit: mark test as a unit test"
-    )
-    config.addinivalue_line(
-        "markers", "integration: mark test as an integration test"
-    )
-    config.addinivalue_line(
-        "markers", "slow: mark test as slow running"
-    )
+    config.addinivalue_line("markers", "unit: mark test as a unit test")
+    config.addinivalue_line("markers", "integration: mark test as an integration test")
+    config.addinivalue_line("markers", "slow: mark test as slow running")
 
 
 def pytest_collection_modifyitems(config, items):
@@ -172,13 +159,10 @@ def pytest_addoption(parser):
         "--run-api",
         action="store_true",
         default=False,
-        help="Run tests that make actual API calls"
+        help="Run tests that make actual API calls",
     )
     parser.addoption(
-        "--run-slow",
-        action="store_true",
-        default=False,
-        help="Run slow tests"
+        "--run-slow", action="store_true", default=False, help="Run slow tests"
     )
 
 
@@ -188,7 +172,7 @@ def pytest_runtest_setup(item):
     if "api" in [marker.name for marker in item.iter_markers()]:
         if not item.config.getoption("--run-api"):
             pytest.skip("need --run-api option to run")
-    
+
     # Skip slow tests unless --run-slow flag is provided
     if "slow" in [marker.name for marker in item.iter_markers()]:
         if not item.config.getoption("--run-slow"):

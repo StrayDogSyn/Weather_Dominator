@@ -78,36 +78,96 @@ This project follows PEP 8 with some modifications:
 * Use double quotes for strings
 * Use type hints for function signatures
 
-### Code Formatting
+### Code Quality Tools
 
-We use Black for code formatting:
+We use multiple tools to maintain code quality. All tools are configured to run automatically via pre-commit hooks.
+
+#### Black - Code Formatter
+
+Black formats Python code to a consistent style:
 
 ```bash
-black .
+# Check what would be formatted
+black src/ tests/ *.py --check
+
+# Apply formatting
+black src/ tests/ *.py
 ```
 
-### Import Sorting
+Configuration:
+- Line length: 100 characters
+- Target Python version: 3.13
 
-We use isort for organizing imports:
+#### isort - Import Sorter
+
+isort organizes imports in a consistent, readable format:
 
 ```bash
-isort .
+# Check import organization
+isort src/ tests/ *.py --check --diff
+
+# Apply import sorting
+isort src/ tests/ *.py
 ```
 
-### Type Checking
+Configuration:
+- Profile: black (compatible with Black formatter)
+- Line length: 100 characters
 
-We use mypy for static type checking:
+#### flake8 - Code Linter
+
+flake8 checks code for style issues and potential bugs:
 
 ```bash
-mypy src/
+# Run flake8 on source code
+flake8 src/ --max-line-length=100 --extend-ignore=E203,W503,W293
 ```
 
-### Linting
+Configuration:
+- Max line length: 100
+- Ignored rules: E203 (whitespace before ':'), W503 (line break before binary operator), W293 (blank line contains whitespace)
+- Excludes: `.git`, `__pycache__`, `build`, `dist`, `.eggs`, `*.egg`
 
-We use flake8 for linting:
+#### mypy - Static Type Checker
+
+mypy validates type hints for type safety:
 
 ```bash
-flake8 .
+# Run type checking on src/
+mypy src/ --ignore-missing-imports --no-strict-optional
+```
+
+Configuration:
+- Ignores missing imports from external libraries
+- No strict optional checking
+- Only checks `src/` directory
+
+### Running All Quality Checks
+
+Run all quality tools at once:
+
+```bash
+# Format code
+black src/ tests/ *.py
+
+# Sort imports
+isort src/ tests/ *.py
+
+# Check code quality
+flake8 src/ --max-line-length=100 --extend-ignore=E203,W503,W293
+
+# Type check
+mypy src/ --ignore-missing-imports --no-strict-optional
+```
+
+Or use pre-commit to run all checks:
+
+```bash
+# Run on staged files
+pre-commit run
+
+# Run on all files
+pre-commit run --all-files
 ```
 
 ## Testing
