@@ -3,58 +3,56 @@ Glassmorphic Style Configuration for Weather Dominator
 Contains color schemes, fonts, and styling constants
 """
 
+from src.constants import ThemeColors, FontConfig
+
+
 class GlassmorphicTheme:
     """Configuration class for glassmorphic styling"""
     
-    # Background colors
-    WINDOW_BG = '#000000'
-    CONTAINER_BG = '#1a1a2e'
-    GLASS_BG = '#16213e'
-    CONTENT_BG = '#16213e'
+    # Background colors - using centralized constants
+    WINDOW_BG = ThemeColors.WINDOW_BG
+    CONTAINER_BG = ThemeColors.CONTAINER_BG
+    GLASS_BG = ThemeColors.GLASS_BG
+    CONTENT_BG = ThemeColors.CONTENT_BG
     
     # Accent colors
-    PRIMARY_ACCENT = '#4a9eff'
-    SECONDARY_ACCENT = '#7bb3ff'
-    HIGHLIGHT = '#4a6fa5'
-    BORDER = '#0f3460'
+    PRIMARY_ACCENT = ThemeColors.PRIMARY_ACCENT
+    SECONDARY_ACCENT = ThemeColors.SECONDARY_ACCENT
+    HIGHLIGHT = ThemeColors.HIGHLIGHT
+    BORDER = ThemeColors.BORDER
     
     # Gradient colors for glassmorphic effect
-    GRADIENT_COLORS = [
-        '#1e2a5a',
-        '#1a2451', 
-        '#161e48',
-        '#12183f'
-    ]
+    GRADIENT_COLORS = ThemeColors.GRADIENT_COLORS
     
     # Text colors
-    TITLE_COLOR = '#4a9eff'
-    SUBTITLE_COLOR = '#7bb3ff'
-    TEXT_COLOR = '#ffffff'
-    MUTED_TEXT = '#b0b0b0'
+    TITLE_COLOR = ThemeColors.TITLE_COLOR
+    SUBTITLE_COLOR = ThemeColors.SUBTITLE_COLOR
+    TEXT_COLOR = ThemeColors.TEXT_COLOR
+    MUTED_TEXT = ThemeColors.MUTED_TEXT
     
     # Button colors
-    BUTTON_BG = '#2d4059'
-    BUTTON_FG = '#ffffff'
-    BUTTON_ACTIVE_BG = '#4a6fa5'
-    BUTTON_HOVER_BG = '#3a5068'
+    BUTTON_BG = ThemeColors.BUTTON_BG
+    BUTTON_FG = ThemeColors.BUTTON_FG
+    BUTTON_ACTIVE_BG = ThemeColors.BUTTON_ACTIVE_BG
+    BUTTON_HOVER_BG = ThemeColors.BUTTON_HOVER_BG
     
     # Danger/Close button
-    DANGER_COLOR = '#ff6b6b'
+    DANGER_COLOR = ThemeColors.DANGER_COLOR
     
-    # Fonts
-    TITLE_FONT = ('Arial', 24, 'bold')
-    SUBTITLE_FONT = ('Arial', 12)
-    BODY_FONT = ('Arial', 10)
-    BUTTON_FONT = ('Arial', 10, 'bold')
-    SECTION_FONT = ('Arial', 12, 'bold')
-    LABEL_FONT = ('Arial', 9, 'bold')
-    SMALL_FONT = ('Arial', 8)
-    LARGE_FONT = ('Arial', 18, 'bold')
+    # Fonts - using centralized font configuration
+    TITLE_FONT = FontConfig.TITLE_FONT
+    SUBTITLE_FONT = FontConfig.SUBTITLE_FONT
+    BODY_FONT = FontConfig.BODY_FONT
+    BUTTON_FONT = FontConfig.BUTTON_FONT
+    SECTION_FONT = FontConfig.SECTION_FONT
+    LABEL_FONT = FontConfig.LABEL_FONT
+    SMALL_FONT = FontConfig.SMALL_FONT
+    LARGE_FONT = FontConfig.LARGE_FONT
     
     # Input colors
-    INPUT_BG = '#1a2451'
-    INPUT_FG = '#ffffff'
-    INPUT_BORDER = '#4a6fa5'
+    INPUT_BG = ThemeColors.INPUT_BG
+    INPUT_FG = ThemeColors.INPUT_FG
+    INPUT_BORDER = ThemeColors.INPUT_BORDER
     
     # Window properties
     WINDOW_ALPHA = 0.95
@@ -67,6 +65,7 @@ class GlassmorphicTheme:
     GLASS_HIGHLIGHT_HEIGHT = 2
     GRADIENT_FRAME_HEIGHT = 1
     SEPARATOR_HEIGHT = 1
+
 
 # COBRA themed color scheme (alternative)
 class CobraTheme(GlassmorphicTheme):

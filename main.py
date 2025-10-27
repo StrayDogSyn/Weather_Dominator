@@ -10,6 +10,28 @@ import sys
 import os
 from theme_config import GlassmorphicTheme, CobraTheme
 
+# Import professional infrastructure
+from src.logger import setup_logging, get_logger
+from src.config_manager import get_config_manager
+from src.exceptions import (
+    WeatherDominatorError,
+    ConfigurationError,
+    APIError,
+    handle_error
+)
+from src.constants import (
+    WINDOW_WIDTH,
+    WINDOW_HEIGHT,
+    WINDOW_MIN_WIDTH,
+    WINDOW_MIN_HEIGHT,
+    APP_NAME,
+    APP_VERSION
+)
+
+# Setup logging
+setup_logging()
+logger = get_logger(__name__)
+
 # Import our custom modules
 try:
     from ui.glass_ui import WeatherDisplayPanel, CobraIntelPanel, InteractiveFeaturesPanel, SmartFeaturesPanel, SmartAIPanel
@@ -17,10 +39,11 @@ try:
     from data.gijoe_api import GIJoeAPI
     from db.sqlite_store import WeatherDatabase
     from ml.predictor import WeatherPredictor
-    from utils.helpers import TemperatureConverter, DataFormatter, ImageCache, ConfigManager
+    from utils.helpers import TemperatureConverter, DataFormatter, ImageCache
     UI_AVAILABLE = True
+    logger.info("All UI modules loaded successfully")
 except ImportError as e:
-    print(f"⚠️ Some modules not available: {e}")
+    logger.warning(f"Some modules not available: {e}")
     UI_AVAILABLE = False
     WeatherDisplayPanel = None
     CobraIntelPanel = None
@@ -34,12 +57,26 @@ except ImportError as e:
     TemperatureConverter = None
     DataFormatter = None
     ImageCache = None
-    ConfigManager = None
+
 
 class GlassmorphicWindow:
+    """Main application window with glassmorphic design"""
+    
     def __init__(self, theme=None):
+        logger.info(f"Initializing {APP_NAME} v{APP_VERSION}")
         self.theme = theme or GlassmorphicTheme()
         self.root = tk.Tk()
+        
+        # Load configuration
+        try:
+            self.config_manager = get_config_manager()
+            self.config = self.config_manager.config
+            logger.info("Configuration loaded successfully")
+        except ConfigurationError as e:
+            logger.error(f"Configuration error: {e}")
+            handle_error(e)
+            self.config_manager = None
+            self.config = None
         
         # Initialize components if available
         if UI_AVAILABLE:
@@ -49,22 +86,21 @@ class GlassmorphicWindow:
                 self.database = WeatherDatabase() if WeatherDatabase is not None else None
                 self.predictor = WeatherPredictor() if WeatherPredictor is not None else None
                 self.alert_system = None  # Will be initialized after root window
-                self.config = ConfigManager() if ConfigManager is not None else None
+                logger.debug("Components initialized successfully")
             except Exception as e:
-                print(f"⚠️ Error initializing components: {e}")
+                logger.error(f"Error initializing components: {e}", exc_info=True)
+                handle_error(e)
                 self.weather_api = None
                 self.gijoe_api = None
                 self.database = None
                 self.predictor = None
                 self.alert_system = None
-                self.config = None
         else:
             self.weather_api = None
             self.gijoe_api = None
             self.database = None
             self.predictor = None
             self.alert_system = None
-            self.config = None
             
         self.setup_window()
         self.create_glassmorphic_frame()
@@ -74,9 +110,12 @@ class GlassmorphicWindow:
         
     def setup_window(self):
         """Configure the main window with transparent background"""
-        self.root.title("COBRA Weather Dominator")
-        self.root.geometry("1200x800")
+        self.root.title(f"{APP_NAME} v{APP_VERSION}")
+        self.root.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}")
+        self.root.minsize(WINDOW_MIN_WIDTH, WINDOW_MIN_HEIGHT)
         self.root.configure(bg=self.theme.WINDOW_BG)
+        
+        logger.debug(f"Window configured: {WINDOW_WIDTH}x{WINDOW_HEIGHT}")
         
         # Center the window on screen
         self.center_window()
@@ -244,7 +283,8 @@ class GlassmorphicWindow:
                 self.create_tab_interface(sections_frame)
                 
             except Exception as e:
-                print(f"⚠️ Error creating UI panels: {e}")
+                logger.error(f"Error creating UI panels: {e}", exc_info=True)
+                handle_error(e)
                 self.create_fallback_sections(sections_frame)
         else:
             self.create_fallback_sections(sections_frame)
@@ -376,7 +416,8 @@ class GlassmorphicWindow:
                 self.cobra_panel.update_character_data(sample_character)
             
         except Exception as e:
-            print(f"⚠️ Error loading sample data: {e}")
+            logger.error(f"Error loading sample data: {e}", exc_info=True)
+            handle_error(e)
     
     def create_fallback_sections(self, parent):
         """Create fallback sections when UI components are not available"""
@@ -446,7 +487,7 @@ class GlassmorphicWindow:
             }
             
             self.weather_panel.update_weather_data(sample_weather)
-            print(f"📊 Demo weather data displayed for {city}")
+            logger.info(f"Demo weather data displayed for {city}")
             return
             
         city = self.weather_panel.city_entry.get().strip()
@@ -479,7 +520,7 @@ class GlassmorphicWindow:
         except Exception as e:
             error_msg = f"Error fetching weather data: {str(e)}"
             self.weather_panel.update_weather_data({"error": error_msg})
-            print(f"❌ {error_msg}")
+            logger.error(error_msg, exc_info=True)
     
     def search_character_data(self):
         """Search for character data from G.I. Joe API"""
@@ -526,7 +567,7 @@ class GlassmorphicWindow:
             })
             
             self.cobra_panel.update_character_data(char_data)
-            print(f"🔍 Demo character data displayed for {character_name}")
+            logger.info(f"Demo character data displayed for {character_name}")
             return
             
         character_name = self.cobra_panel.character_entry.get().strip()
@@ -553,23 +594,28 @@ class GlassmorphicWindow:
         except Exception as e:
             error_msg = f"Error searching character: {str(e)}"
             self.cobra_panel.update_character_data({"error": error_msg})
-            print(f"❌ {error_msg}")
+            logger.error(error_msg, exc_info=True)
     
     def run(self):
         """Start the application main loop"""
-        print("Starting COBRA Weather Dominator...")
-        print("Glassmorphic window initialized successfully!")
+        logger.info(f"Starting {APP_NAME}...")
+        logger.info("Glassmorphic window initialized successfully!")
         self.root.mainloop()
 
 def main():
     """Main function to run the application"""
     try:
+        logger.info("="*60)
+        logger.info(f"{APP_NAME} v{APP_VERSION}")
+        logger.info("="*60)
+        
         # You can switch themes here
         # app = GlassmorphicWindow(CobraTheme())  # For COBRA red theme
         app = GlassmorphicWindow()  # Default blue theme
         app.run()
     except Exception as e:
-        print(f"Error starting application: {e}")
+        logger.critical(f"Error starting application: {e}", exc_info=True)
+        handle_error(e)
         sys.exit(1)
 
 if __name__ == "__main__":

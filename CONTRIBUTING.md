@@ -195,7 +195,7 @@ def function_name(param1: str, param2: int) -> bool:
 
 ### Commit Message Format
 
-```
+```text
 <type>(<scope>): <subject>
 
 <body>
@@ -204,6 +204,7 @@ def function_name(param1: str, param2: int) -> bool:
 ```
 
 **Types:**
+
 * `feat`: New feature
 * `fix`: Bug fix
 * `docs`: Documentation only changes
@@ -215,7 +216,7 @@ def function_name(param1: str, param2: int) -> bool:
 
 **Example:**
 
-```
+```text
 feat(weather-api): add caching for API responses
 
 Implement response caching to reduce API calls and improve
@@ -226,7 +227,7 @@ Closes #123
 
 ## Project Structure
 
-```
+```text
 Weather_Dominator/
 ├── src/                  # Core source code
 │   ├── constants.py      # Application constants
@@ -254,17 +255,18 @@ Weather_Dominator/
 
 ### Pull Request Checklist
 
-- [ ] Code follows the project's style guidelines
-- [ ] Tests pass locally
-- [ ] New tests added for new functionality
-- [ ] Documentation updated
-- [ ] Commit messages follow the format
-- [ ] No merge conflicts
-- [ ] Reviewed own code changes
+* [ ] Code follows the project's style guidelines
+* [ ] Tests pass locally
+* [ ] New tests added for new functionality
+* [ ] Documentation updated
+* [ ] Commit messages follow the format
+* [ ] No merge conflicts
+* [ ] Reviewed own code changes
 
 ## Questions?
 
 Feel free to:
+
 * Open an issue with the "question" label
 * Start a discussion in GitHub Discussions
 * Contact the maintainers
@@ -272,6 +274,7 @@ Feel free to:
 ## Recognition
 
 Contributors will be recognized in:
+
 * The project README
 * Release notes
 * Contributors page
