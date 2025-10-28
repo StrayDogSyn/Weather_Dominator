@@ -194,11 +194,9 @@ cython_debug/
 .cursorindexingignore
 
 # Project-specific cleanup patterns
-# Demo and test files
+# Demo files
 demo_*.py
-test_*.py
 *_demo.py
-*_test.py
 
 # Backup files
 *.bak
